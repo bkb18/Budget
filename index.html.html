@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<meta name="theme-color" content="#1f6feb">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Budget</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --card: #fff; --text: #1c2430; --muted: #6b7786;
+    --accent: #1f6feb; --good: #2da44e; --bad: #d1242f; --line: #e3e8ef; --bar: #dbe7fb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1419; --card: #1a2029; --text: #e6edf3; --muted: #8b98a5;
+      --accent: #4c8dff; --good: #3fb950; --bad: #f85149; --line: #2a323d; --bar: #23324a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .month-nav { display: flex; align-items: center; gap: 8px; }
+  .month-nav span { min-width: 130px; text-align: center; font-weight: 600; }
+  button { font: inherit; border: 0; border-radius: 10px; padding: 10px 14px; background: var(--accent); color: #fff; cursor: pointer; min-height: 44px; }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  button.small { min-height: 32px; padding: 6px 10px; font-size: 13px; }
+  button.danger { background: transparent; color: var(--bad); border: 1px solid var(--line); }
+  input, select { font: inherit; width: 100%; padding: 12px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field { margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; min-width: 0; }
+  .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
+  .summary .label { font-size: 12px; color: var(--muted); }
+  .summary .value { font-size: clamp(14px, 4.6vw, 18px); font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }
+  .good { color: var(--good); }
+  .bad { color: var(--bad); }
+  .cat { margin-bottom: 14px; }
+  .cat-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 6px; gap: 8px; }
+  .cat-head .amounts { color: var(--muted); white-space: nowrap; }
+  .cat-head a { color: var(--accent); text-decoration: none; }
+  .bar-track { height: 10px; background: var(--bar); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width .3s; }
+  .bar-fill.over { background: var(--bad); }
+  .tx { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); gap: 8px; }
+  .tx:last-child { border-bottom: 0; }
+  .tx .meta { font-size: 13px; color: var(--muted); }
+  .tx .right { display: flex; align-items: center; gap: 8px; }
+  .tx .amt { font-weight: 600; white-space: nowrap; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 10px 0; }
+  .seg { display: flex; gap: 8px; margin-bottom: 12px; }
+  .seg button { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .hidden { display: none !important; }
+  .notice { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  dialog { border: 0; border-radius: 14px; padding: 18px; width: min(92vw, 380px); background: var(--card); color: var(--text); }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Budget</h1>
+    <div class="month-nav">
+      <button class="ghost" id="prevMonth" aria-label="Previous month">&#8249;</button>
+      <span id="monthLabel"></span>
+      <button class="ghost" id="nextMonth" aria-label="Next month">&#8250;</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="summary">
+      <div><div class="label">Income</div><div class="value good" id="sumIncome"></div></div>
+      <div><div class="label">Spent</div><div class="value bad" id="sumSpent"></div></div>
+      <div><div class="label">Left</div><div class="value" id="sumLeft"></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="seg">
+      <button type="button" id="btnExpense" class="on">Expense</button>
+      <button type="button" id="btnIncome">Income</button>
+    </div>
+    <form id="txForm">
+      <div class="row">
+        <div class="field"><label for="txAmount">Amount</label>
+          <input id="txAmount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required></div>
+        <div class="field"><label for="txDate">Date</label>
+          <input id="txDate" type="date" required></div>
+      </div>
+      <div class="field"><label for="txCategory">Category</label><select id="txCategory"></select></div>
+      <div class="field"><label for="txNote">Note (optional)</label>
+        <input id="txNote" type="text" maxlength="80" placeholder="e.g. Costco run"></div>
+      <button type="submit" style="width:100%">Add transaction</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Budget by category</h2>
+    <div id="categories"></div>
+    <div class="actions"><button type="button" class="small ghost" id="addCategory">+ Add category</button></div>
+    <p class="notice">Tap a category's limit to change it.</p>
+  </section>
+
+  <section class="card">
+    <h2>Transactions</h2>
+    <div id="txList"></div>
+  </section>
+
+  <section class="card">
+    <h2>Backup</h2>
+    <p class="notice">Your data is stored only on this device. Export a backup now and then.</p>
+    <div class="actions">
+      <button type="button" class="small ghost" id="exportBtn">Export backup</button>
+      <button type="button" class="small ghost" id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json" class="hidden">
+    </div>
+  </section>
+</main>
+
+<dialog id="limitDialog">
+  <form id="limitForm" method="dialog">
+    <h2 id="limitTitle">Set limit</h2>
+    <div class="field"><label for="limitInput">Monthly limit ($)</label>
+      <input id="limitInput" type="number" inputmode="decimal" step="0.01" min="0"></div>
+    <div class="actions">
+      <button type="submit">Save</button>
+      <button type="button" class="ghost" id="limitCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  const KEY = "budget-app-v1"; // same key as before, so existing data carries over
+  const DEFAULTS = [
+    { id: "groceries", name: "Groceries", limit: 500 },
+    { id: "dining", name: "Dining out", limit: 150 },
+    { id: "gas", name: "Gas", limit: 150 },
+    { id: "bills", name: "Bills", limit: 800 },
+    { id: "shopping", name: "Shopping", limit: 200 },
+    { id: "fun", name: "Fun", limit: 100 },
+    { id: "other", name: "Other", limit: 100 }
+  ];
+
+  let state = { categories: DEFAULTS.map((c) => ({ ...c })), transactions: [] };
+  let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let txType = "expense";
+  let editingCatId = null;
+
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n || 0);
+  const pad = (n) => String(n).padStart(2, "0");
+  const todayStr = () => { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const validState = (d) => d && Array.isArray(d.categories) && Array.isArray(d.transactions);
+
+  function load() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(KEY));
+      if (validState(parsed)) state = parsed;
+    } catch (e) { /* storage blocked or empty: use defaults */ }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { alert("Could not save on this device. Storage may be full or blocked."); }
+  }
+  function commit() { save(); render(); }
+
+  function render() {
+    $("monthLabel").textContent = viewMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    const key = viewMonth.getFullYear() + "-" + pad(viewMonth.getMonth() + 1);
+    const txs = state.transactions.filter((t) => t.date.slice(0, 7) === key);
+    const sum = (type) => txs.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
+    const income = sum("income"), spent = sum("expense"), left = income - spent;
+
+    $("sumIncome").textContent = money(income);
+    $("sumSpent").textContent = money(spent);
+    $("sumLeft").textContent = money(left);
+    $("sumLeft").className = "value " + (left < 0 ? "bad" : "good");
+
+    renderCategories(txs);
+    renderTransactions(txs);
+    renderOptions();
+  }
+
+  function renderCategories(txs) {
+    const spentBy = {};
+    txs.forEach((t) => { if (t.type === "expense") spentBy[t.category] = (spentBy[t.category] || 0) + t.amount; });
+    $("categories").innerHTML = state.categories.length
+      ? state.categories.map((c) => {
+          const spent = spentBy[c.id] || 0;
+          const pct = c.limit > 0 ? Math.min(100, (spent / c.limit) * 100) : 0;
+          const over = c.limit > 0 && spent > c.limit;
+          return '<div class="cat"><div class="cat-head"><span>' + esc(c.name) + '</span>' +
+            '<span class="amounts">' + money(spent) + ' of <a href="#" data-limit="' + esc(c.id) + '">' + money(c.limit) + '</a> ' +
+            '<button type="button" class="small danger" data-delcat="' + esc(c.id) + '" aria-label="Delete category">&times;</button></span></div>' +
+            '<div class="bar-track"><div class="bar-fill' + (over ? " over" : "") + '" style="width:' + pct + '%"></div></div></div>';
+        }).join("")
+      : '<div class="empty">No categories yet.</div>';
+  }
+
+  function renderTransactions(txs) {
+    if (!txs.length) { $("txList").innerHTML = '<div class="empty">No transactions this month.</div>'; return; }
+    $("txList").innerHTML = txs.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).map((t) => {
+      const isIncome = t.type === "income";
+      const cat = state.categories.find((c) => c.id === t.category);
+      const catName = isIncome ? "Income" : (cat ? cat.name : "Deleted category");
+      return '<div class="tx"><div><div>' + esc(t.note || catName) + '</div>' +
+        '<div class="meta">' + esc(t.date) + ' &middot; ' + esc(catName) + '</div></div>' +
+        '<div class="right"><span class="amt ' + (isIncome ? "good" : "") + '">' + (isIncome ? "+" : "-") + money(t.amount) + '</span>' +
+        '<button type="button" class="small danger" data-deltx="' + esc(t.id) + '" aria-label="Delete transaction">&times;</button></div></div>';
+    }).join("");
+  }
+
+  function renderOptions() {
+    const sel = $("txCategory"), current = sel.value;
+    sel.innerHTML = state.categories.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join("");
+    if (state.categories.some((c) => c.id === current)) sel.value = current;
+  }
+
+  function setType(type) {
+    txType = type;
+    $("btnExpense").classList.toggle("on", type === "expense");
+    $("btnIncome").classList.toggle("on", type === "income");
+    $("txCategory").disabled = type === "income";
+  }
+
+  function shiftMonth(n) { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + n, 1); render(); }
+
+  $("btnExpense").onclick = () => setType("expense");
+  $("btnIncome").onclick = () => setType("income");
+  $("prevMonth").onclick = () => shiftMonth(-1);
+  $("nextMonth").onclick = () => shiftMonth(1);
+
+  $("txForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const amount = parseFloat($("txAmount").value), date = $("txDate").value;
+    if (!(amount > 0) || !date) return;
+    state.transactions.push({
+      id: uid(), type: txType, amount: Math.round(amount * 100) / 100, date,
+      category: txType === "income" ? "income" : $("txCategory").value,
+      note: $("txNote").value.trim()
+    });
+    $("txAmount").value = "";
+    $("txNote").value = "";
+    const d = new Date(date + "T00:00:00");
+    viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    commit();
+  });
+
+  $("txList").addEventListener("click", (e) => {
+    const id = e.target.getAttribute("data-deltx");
+    if (!id || !confirm("Delete this transaction?")) return;
+    state.transactions = state.transactions.filter((t) => t.id !== id);
+    commit();
+  });
+
+  $("categories").addEventListener("click", (e) => {
+    const limitId = e.target.getAttribute("data-limit");
+    const delId = e.target.getAttribute("data-delcat");
+    const c = state.categories.find((x) => x.id === (limitId || delId));
+    if (!c) return;
+    if (limitId) {
+      e.preventDefault();
+      editingCatId = c.id;
+      $("limitTitle").textContent = c.name + " limit";
+      $("limitInput").value = c.limit;
+      $("limitDialog").showModal();
+    } else if (confirm('Delete "' + c.name + '"? Its transactions will stay but show as "Deleted category".')) {
+      state.categories = state.categories.filter((x) => x.id !== delId);
+      commit();
+    }
+  });
+
+  $("limitForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = parseFloat($("limitInput").value);
+    const c = state.categories.find((x) => x.id === editingCatId);
+    if (c && v >= 0) { c.limit = Math.round(v * 100) / 100; commit(); }
+    $("limitDialog").close();
+  });
+  $("limitCancel").onclick = () => $("limitDialog").close();
+
+  $("addCategory").onclick = () => {
+    const name = prompt("Category name:");
+    if (!name || !name.trim()) return;
+    const limit = parseFloat(prompt("Monthly limit for " + name.trim() + " ($):", "100")) || 0;
+    state.categories.push({ id: uid(), name: name.trim(), limit });
+    commit();
+  };
+
+  $("exportBtn").onclick = () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "budget-backup-" + todayStr() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  $("importBtn").onclick = () => $("importFile").click();
+  $("importFile").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!validState(data)) throw new Error("bad");
+        if (!confirm("Replace all current data with this backup?")) return;
+        state = data;
+        commit();
+      } catch (err) { alert("That file isn't a valid backup."); }
+    };
+    reader.readAsText(file);
+  });
+
+  load();
+  $("txDate").value = todayStr();
+  setType("expense");
+  render();
+})();
+</script>
+</body>
+</html>
