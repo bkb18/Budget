@@ -6,93 +6,142 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Budget">
-<meta name="theme-color" content="#1f6feb">
+<meta name="theme-color" content="#ff7a59">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Budget</title>
 <style>
   :root {
-    --bg: #f4f6f9; --card: #fff; --text: #1c2430; --muted: #6b7786;
-    --accent: #1f6feb; --good: #2da44e; --bad: #d1242f; --line: #e3e8ef; --bar: #dbe7fb;
+    --bg: #fff8f1; --card: #ffffff; --text: #2b2118; --muted: #8a7968;
+    --accent: #ff7a59; --accent-ink: #fff; --good: #1f9d6b; --bad: #d94a4a;
+    --line: #f0e4d8; --track: #f6ece1; --shadow: 0 6px 18px rgba(120, 70, 30, .08);
+    --hero1: #ff9a62; --hero2: #ff5f7e;
+    --c0: #ff7a59; --c1: #f2b134; --c2: #1f9d6b; --c3: #3f8fe0;
+    --c4: #8a63d2; --c5: #e0568f; --c6: #2bb5b0; --c7: #a07a52;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0f1419; --card: #1a2029; --text: #e6edf3; --muted: #8b98a5;
-      --accent: #4c8dff; --good: #3fb950; --bad: #f85149; --line: #2a323d; --bar: #23324a;
+      --bg: #1a1511; --card: #26201a; --text: #f6ece1; --muted: #b3a08d;
+      --accent: #ff8a6b; --good: #4cc795; --bad: #ff7b7b;
+      --line: #3a3027; --track: #342b23; --shadow: none;
+      --hero1: #d8683a; --hero2: #b83a5c;
+      --c0: #ff8a6b; --c1: #f5c04a; --c2: #4cc795; --c3: #6aa9f0;
+      --c4: #a98ae6; --c5: #ee7aa8; --c6: #4fd0cb; --c7: #c39c72;
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
   main { max-width: 560px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 20px; margin: 0; }
-  h2 { font-size: 16px; margin: 0 0 12px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .month-nav { display: flex; align-items: center; gap: 8px; }
-  .month-nav span { min-width: 130px; text-align: center; font-weight: 600; }
-  button { font: inherit; border: 0; border-radius: 10px; padding: 10px 14px; background: var(--accent); color: #fff; cursor: pointer; min-height: 44px; }
-  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
-  button.small { min-height: 32px; padding: 6px 10px; font-size: 13px; }
-  button.danger { background: transparent; color: var(--bad); border: 1px solid var(--line); }
-  input, select { font: inherit; width: 100%; padding: 12px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 14px; padding: 10px 16px; background: var(--accent); color: var(--accent-ink); cursor: pointer; min-height: 44px; }
+  button:active { transform: scale(.97); }
+  button.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--line); }
+  button.small { min-height: 32px; padding: 6px 12px; font-size: 13px; }
+  button.danger { background: transparent; color: var(--bad); border: 1.5px solid var(--line); }
+  input, select { font: inherit; width: 100%; padding: 12px; min-height: 46px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg); color: var(--text); }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
   .field { margin-bottom: 12px; }
   .row { display: flex; gap: 10px; }
   .row > * { flex: 1; min-width: 0; }
-  .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
-  .summary .label { font-size: 12px; color: var(--muted); }
-  .summary .value { font-size: clamp(14px, 4.6vw, 18px); font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }
-  .good { color: var(--good); }
-  .bad { color: var(--bad); }
-  .cat { margin-bottom: 14px; }
-  .cat-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 6px; gap: 8px; }
-  .cat-head .amounts { color: var(--muted); white-space: nowrap; }
-  .cat-head a { color: var(--accent); text-decoration: none; }
-  .bar-track { height: 10px; background: var(--bar); border-radius: 6px; overflow: hidden; }
-  .bar-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width .3s; }
-  .bar-fill.over { background: var(--bad); }
-  .tx { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); gap: 8px; }
-  .tx:last-child { border-bottom: 0; }
-  .tx .meta { font-size: 13px; color: var(--muted); }
-  .tx .right { display: flex; align-items: center; gap: 8px; }
-  .tx .amt { font-weight: 600; white-space: nowrap; }
-  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 10px 0; }
-  .seg { display: flex; gap: 8px; margin-bottom: 12px; }
-  .seg button { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--line); }
-  .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .hidden { display: none !important; }
   .notice { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
-  dialog { border: 0; border-radius: 14px; padding: 18px; width: min(92vw, 380px); background: var(--card); color: var(--text); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 14px 0; }
+  .good { color: var(--good); } .bad { color: var(--bad); }
+
+  .greet { display: flex; justify-content: space-between; align-items: flex-start; margin: 4px 2px 14px; gap: 10px; }
+  .greet h1 { font-size: 19px; margin: 0; cursor: pointer; }
+  .greet p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+  .month-nav { display: flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 4px; }
+  .month-nav button { min-height: 36px; padding: 4px 12px; font-size: 18px; }
+  .month-nav span { min-width: 112px; text-align: center; font-weight: 700; font-size: 14px; }
+
+  .hero { background: linear-gradient(135deg, var(--hero1), var(--hero2)); color: #fff; border: 0; text-align: center; padding: 22px 18px; }
+  .hero .big-emoji { font-size: 40px; line-height: 1; }
+  .hero .label { font-size: 13px; opacity: .9; margin-top: 8px; font-weight: 600; }
+  .hero .amount { font-size: clamp(30px, 10vw, 44px); font-weight: 800; letter-spacing: -.5px; overflow-wrap: anywhere; }
+  .hero .msg { font-size: 14px; margin-top: 4px; opacity: .95; }
+  .pills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+  .pill { background: rgba(255,255,255,.2); border-radius: 14px; padding: 10px; }
+  .pill .l { font-size: 12px; opacity: .9; font-weight: 600; }
+  .pill .v { font-size: clamp(15px, 4.8vw, 19px); font-weight: 800; overflow-wrap: anywhere; }
+
+  .seg { display: flex; gap: 8px; margin-bottom: 14px; background: var(--track); padding: 4px; border-radius: 16px; }
+  .seg button { flex: 1; background: transparent; color: var(--muted); }
+  .seg button.on { background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+  .donut-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .donut { width: 170px; height: 170px; flex: none; }
+  .donut .center-big { font-size: 7px; font-weight: 800; fill: var(--text); text-anchor: middle; }
+  .donut .center-sm { font-size: 3.4px; fill: var(--muted); text-anchor: middle; }
+  .legend { flex: 1; min-width: 150px; }
+  .legend div { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+  .legend i { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+  .legend b { margin-left: auto; font-weight: 700; }
+  .chart-svg { width: 100%; height: auto; display: block; }
+  .chart-svg text { font-family: inherit; fill: var(--muted); font-size: 10px; }
+  .key { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .key i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  .cat { margin-bottom: 16px; }
+  .cat-head { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; margin-bottom: 6px; gap: 8px; }
+  .cat-head .emo { display: inline-block; width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 10px; margin-right: 8px; font-size: 16px; }
+  .cat-head .amounts { color: var(--muted); font-weight: 500; font-size: 13px; white-space: nowrap; }
+  .cat-head a { color: var(--accent); text-decoration: none; font-weight: 700; }
+  .bar-track { height: 12px; background: var(--track); border-radius: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 8px; transition: width .5s cubic-bezier(.2,.8,.2,1); }
+  .status { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .status.warn { color: #c98a00; } .status.over { color: var(--bad); font-weight: 600; }
+
+  .tx { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); gap: 10px; }
+  .tx:last-child { border-bottom: 0; }
+  .tx .ico { width: 38px; height: 38px; line-height: 38px; text-align: center; border-radius: 12px; font-size: 18px; flex: none; }
+  .tx .mid { flex: 1; min-width: 0; }
+  .tx .mid div:first-child { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tx .meta { font-size: 12px; color: var(--muted); }
+  .tx .right { display: flex; align-items: center; gap: 8px; }
+  .tx .amt { font-weight: 800; white-space: nowrap; }
+  dialog { border: 0; border-radius: 20px; padding: 20px; width: min(92vw, 380px); background: var(--card); color: var(--text); }
   dialog::backdrop { background: rgba(0,0,0,.4); }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 30px); background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 16px; font-weight: 600; font-size: 14px; opacity: 0; pointer-events: none; transition: .35s; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <h1>Budget</h1>
+  <div class="greet">
+    <div>
+      <h1 id="greeting" title="Tap to set your name"></h1>
+      <p id="subgreet"></p>
+    </div>
     <div class="month-nav">
       <button class="ghost" id="prevMonth" aria-label="Previous month">&#8249;</button>
       <span id="monthLabel"></span>
       <button class="ghost" id="nextMonth" aria-label="Next month">&#8250;</button>
     </div>
-  </header>
+  </div>
 
-  <section class="card">
-    <div class="summary">
-      <div><div class="label">Income</div><div class="value good" id="sumIncome"></div></div>
-      <div><div class="label">Spent</div><div class="value bad" id="sumSpent"></div></div>
-      <div><div class="label">Left</div><div class="value" id="sumLeft"></div></div>
+  <section class="card hero">
+    <div class="big-emoji" id="heroEmoji"></div>
+    <div class="label">Left to spend</div>
+    <div class="amount" id="sumLeft"></div>
+    <div class="msg" id="heroMsg"></div>
+    <div class="pills">
+      <div class="pill"><div class="l">&#128176; Income</div><div class="v" id="sumIncome"></div></div>
+      <div class="pill"><div class="l">&#128722; Spent</div><div class="v" id="sumSpent"></div></div>
     </div>
   </section>
 
   <section class="card">
     <div class="seg">
-      <button type="button" id="btnExpense" class="on">Expense</button>
-      <button type="button" id="btnIncome">Income</button>
+      <button type="button" id="btnExpense" class="on">&#128184; Expense</button>
+      <button type="button" id="btnIncome">&#127881; Income</button>
     </div>
     <form id="txForm">
       <div class="row">
@@ -103,26 +152,36 @@
       </div>
       <div class="field"><label for="txCategory">Category</label><select id="txCategory"></select></div>
       <div class="field"><label for="txNote">Note (optional)</label>
-        <input id="txNote" type="text" maxlength="80" placeholder="e.g. Costco run"></div>
-      <button type="submit" style="width:100%">Add transaction</button>
+        <input id="txNote" type="text" maxlength="80" placeholder="What was it for?"></div>
+      <button type="submit" style="width:100%">Add it</button>
     </form>
   </section>
 
   <section class="card">
-    <h2>Budget by category</h2>
-    <div id="categories"></div>
-    <div class="actions"><button type="button" class="small ghost" id="addCategory">+ Add category</button></div>
-    <p class="notice">Tap a category's limit to change it.</p>
+    <h2>Where it went</h2>
+    <div id="donut"></div>
   </section>
 
   <section class="card">
-    <h2>Transactions</h2>
+    <h2>Last 6 months</h2>
+    <div id="bars"></div>
+  </section>
+
+  <section class="card">
+    <h2>Your categories</h2>
+    <div id="categories"></div>
+    <div class="actions"><button type="button" class="small ghost" id="addCategory">+ Add category</button></div>
+    <p class="notice">Tap a limit to change it.</p>
+  </section>
+
+  <section class="card">
+    <h2>Recent activity</h2>
     <div id="txList"></div>
   </section>
 
   <section class="card">
     <h2>Backup</h2>
-    <p class="notice">Your data is stored only on this device. Export a backup now and then.</p>
+    <p class="notice">Your data lives only on this device. Export a backup now and then.</p>
     <div class="actions">
       <button type="button" class="small ghost" id="exportBtn">Export backup</button>
       <button type="button" class="small ghost" id="importBtn">Import backup</button>
@@ -142,6 +201,7 @@
     </div>
   </form>
 </dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function () {
@@ -157,19 +217,29 @@
     { id: "fun", name: "Fun", limit: 100 },
     { id: "other", name: "Other", limit: 100 }
   ];
+  const EMOJI = { groceries: "🛒", dining: "🍕", gas: "⛽", bills: "🏠", shopping: "🛍️", fun: "🎮", other: "✨", income: "🎉" };
+  const PICK = ["🏷️", "🎁", "🐶", "💊", "✈️", "📚", "🎬", "☕", "💇", "🚗"];
 
   let state = { categories: DEFAULTS.map((c) => ({ ...c })), transactions: [] };
   let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let txType = "expense";
   let editingCatId = null;
+  let toastTimer = null;
 
   const $ = (id) => document.getElementById(id);
-  const money = (n) => new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n || 0);
+  const fmt = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" });
+  const money = (n) => fmt.format(n || 0);
+  const whole = (n) => new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
   const pad = (n) => String(n).padStart(2, "0");
   const todayStr = () => { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+  const mKey = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const validState = (d) => d && Array.isArray(d.categories) && Array.isArray(d.transactions);
+  const emojiFor = (c) => (c && (c.emoji || EMOJI[c.id])) || "🏷️";
+  const colorIdx = (id) => { const i = state.categories.findIndex((c) => c.id === id); return (i < 0 ? 7 : i) % 8; };
+  const colorVar = (i) => "var(--c" + i + ")";
+  const tint = (i) => "color-mix(in srgb, var(--c" + i + ") 18%, transparent)";
 
   function load() {
     try {
@@ -183,55 +253,137 @@
   }
   function commit() { save(); render(); }
 
-  function render() {
-    $("monthLabel").textContent = viewMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    const key = viewMonth.getFullYear() + "-" + pad(viewMonth.getMonth() + 1);
-    const txs = state.transactions.filter((t) => t.date.slice(0, 7) === key);
-    const sum = (type) => txs.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
-    const income = sum("income"), spent = sum("expense"), left = income - spent;
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+  }
 
+  const monthTx = (key) => state.transactions.filter((t) => t.date.slice(0, 7) === key);
+  const total = (txs, type) => txs.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
+
+  function greeting() {
+    const h = new Date().getHours();
+    const part = h < 5 ? "Burning the midnight oil" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    return part + (state.name ? ", " + state.name : "") + " 👋";
+  }
+
+  function render() {
+    $("greeting").textContent = greeting();
+    $("monthLabel").textContent = viewMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+    const txs = monthTx(mKey(viewMonth));
+    const income = total(txs, "income"), spent = total(txs, "expense"), left = income - spent;
     $("sumIncome").textContent = money(income);
     $("sumSpent").textContent = money(spent);
     $("sumLeft").textContent = money(left);
-    $("sumLeft").className = "value " + (left < 0 ? "bad" : "good");
 
+    let emoji, msg, sub;
+    if (!txs.length) { emoji = "🌱"; msg = "A fresh month. Add your first entry to get going."; sub = "Let's make this month a good one."; }
+    else if (left < 0) { emoji = "😅"; msg = "Over by " + money(-left) + ". It happens. Tomorrow's a fresh start."; sub = "A little tighter for the rest of the month."; }
+    else if (income > 0 && spent / income < 0.5) { emoji = "🎉"; msg = "You're crushing it. Under half of your income spent."; sub = "Future you says thanks."; }
+    else if (income === 0) { emoji = "🤔"; msg = "Add your income to see how you're really doing."; sub = "Spending is tracked either way."; }
+    else { emoji = "👍"; msg = "Steady as she goes. Keep it up."; sub = "You're on track."; }
+    $("heroEmoji").textContent = emoji;
+    $("heroMsg").textContent = msg;
+    $("subgreet").textContent = sub;
+
+    renderDonut(txs);
+    renderBars();
     renderCategories(txs);
     renderTransactions(txs);
     renderOptions();
+  }
+
+  function renderDonut(txs) {
+    const by = {};
+    txs.forEach((t) => { if (t.type === "expense") by[t.category] = (by[t.category] || 0) + t.amount; });
+    const items = Object.keys(by).map((id) => ({ id, v: by[id], c: state.categories.find((x) => x.id === id) }))
+      .sort((a, b) => b.v - a.v);
+    const sum = items.reduce((s, i) => s + i.v, 0);
+    if (!sum) { $("donut").innerHTML = '<div class="empty">🍩 Nothing spent yet. Your spending breakdown shows up here.</div>'; return; }
+
+    let offset = 25; // start at 12 o'clock
+    const rings = items.map((i) => {
+      const pct = (i.v / sum) * 100;
+      const s = '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="' + colorVar(colorIdx(i.id)) +
+        '" stroke-width="5.5" stroke-dasharray="' + Math.max(pct - 0.6, 0.2) + ' ' + (100 - Math.max(pct - 0.6, 0.2)) +
+        '" stroke-dashoffset="' + offset + '"><title>' + esc(i.c ? i.c.name : "Deleted category") + ": " + money(i.v) + '</title></circle>';
+      offset -= pct;
+      return s;
+    }).join("");
+    const legend = items.map((i) =>
+      '<div><i style="background:' + colorVar(colorIdx(i.id)) + '"></i>' + emojiFor(i.c) + " " + esc(i.c ? i.c.name : "Deleted category") +
+      "<b>" + Math.round((i.v / sum) * 100) + "%</b></div>").join("");
+    $("donut").innerHTML =
+      '<div class="donut-wrap"><svg class="donut" viewBox="0 0 42 42" role="img" aria-label="Spending by category">' +
+      '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--track)" stroke-width="5.5"/>' + rings +
+      '<text class="center-big" x="21" y="22.2">' + whole(sum) + '</text><text class="center-sm" x="21" y="27">spent</text></svg>' +
+      '<div class="legend">' + legend + "</div></div>";
+  }
+
+  function renderBars() {
+    const months = [];
+    for (let i = 5; i >= 0; i--) months.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - i, 1));
+    const data = months.map((d) => { const t = monthTx(mKey(d)); return { d, inc: total(t, "income"), sp: total(t, "expense") }; });
+    const max = Math.max(1, ...data.map((x) => Math.max(x.inc, x.sp)));
+    if (!data.some((x) => x.inc || x.sp)) { $("bars").innerHTML = '<div class="empty">📊 Add a few entries and your monthly trend shows up here.</div>'; return; }
+    const W = 320, H = 150, base = 128, top = 14, gap = W / 6, bw = 17;
+    const h = (v) => (v / max) * (base - top);
+    let out = '<svg class="chart-svg" viewBox="0 0 ' + W + " " + (H + 6) + '" role="img" aria-label="Income and spending for the last 6 months">' +
+      '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="var(--line)" stroke-width="1"/>';
+    data.forEach((x, i) => {
+      const cx = gap * i + gap / 2, current = mKey(x.d) === mKey(viewMonth);
+      const hi = h(x.inc), hs = h(x.sp);
+      out += '<rect x="' + (cx - bw - 1.5) + '" y="' + (base - hi) + '" width="' + bw + '" height="' + hi + '" rx="5" fill="var(--good)"><title>' + x.d.toLocaleDateString(undefined, { month: "long" }) + " income: " + money(x.inc) + "</title></rect>" +
+        '<rect x="' + (cx + 1.5) + '" y="' + (base - hs) + '" width="' + bw + '" height="' + hs + '" rx="5" fill="var(--accent)"><title>' + x.d.toLocaleDateString(undefined, { month: "long" }) + " spent: " + money(x.sp) + "</title></rect>" +
+        '<text x="' + cx + '" y="' + (base + 15) + '" text-anchor="middle" style="' + (current ? "fill:var(--text);font-weight:800" : "") + '">' + x.d.toLocaleDateString(undefined, { month: "short" }) + "</text>";
+    });
+    $("bars").innerHTML = out + '</svg><div class="key"><span><i style="background:var(--good)"></i>Income</span><span><i style="background:var(--accent)"></i>Spent</span></div>';
   }
 
   function renderCategories(txs) {
     const spentBy = {};
     txs.forEach((t) => { if (t.type === "expense") spentBy[t.category] = (spentBy[t.category] || 0) + t.amount; });
     $("categories").innerHTML = state.categories.length
-      ? state.categories.map((c) => {
+      ? state.categories.map((c, idx) => {
           const spent = spentBy[c.id] || 0;
           const pct = c.limit > 0 ? Math.min(100, (spent / c.limit) * 100) : 0;
           const over = c.limit > 0 && spent > c.limit;
-          return '<div class="cat"><div class="cat-head"><span>' + esc(c.name) + '</span>' +
+          const warn = !over && c.limit > 0 && spent / c.limit >= 0.8;
+          const status = over ? "Over by " + money(spent - c.limit) + " 😬"
+            : warn ? "Almost there. " + money(c.limit - spent) + " left ⚠️"
+            : spent === 0 ? "Untouched ✨"
+            : money(c.limit - spent) + " to go";
+          return '<div class="cat"><div class="cat-head"><span><span class="emo" style="background:' + tint(idx % 8) + '">' + emojiFor(c) + "</span>" + esc(c.name) + "</span>" +
             '<span class="amounts">' + money(spent) + ' of <a href="#" data-limit="' + esc(c.id) + '">' + money(c.limit) + '</a> ' +
-            '<button type="button" class="small danger" data-delcat="' + esc(c.id) + '" aria-label="Delete category">&times;</button></span></div>' +
-            '<div class="bar-track"><div class="bar-fill' + (over ? " over" : "") + '" style="width:' + pct + '%"></div></div></div>';
+            '<button type="button" class="small danger" data-delcat="' + esc(c.id) + '" aria-label="Delete ' + esc(c.name) + '">&times;</button></span></div>' +
+            '<div class="bar-track"><div class="bar-fill" style="width:' + pct + "%;background:" + (over ? "var(--bad)" : colorVar(idx % 8)) + '"></div></div>' +
+            '<div class="status' + (over ? " over" : warn ? " warn" : "") + '">' + status + "</div></div>";
         }).join("")
-      : '<div class="empty">No categories yet.</div>';
+      : '<div class="empty">No categories yet. Add one below.</div>';
   }
 
   function renderTransactions(txs) {
-    if (!txs.length) { $("txList").innerHTML = '<div class="empty">No transactions this month.</div>'; return; }
+    if (!txs.length) { $("txList").innerHTML = '<div class="empty">Nothing here yet. Add your first one above 👆</div>'; return; }
     $("txList").innerHTML = txs.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).map((t) => {
       const isIncome = t.type === "income";
       const cat = state.categories.find((c) => c.id === t.category);
       const catName = isIncome ? "Income" : (cat ? cat.name : "Deleted category");
-      return '<div class="tx"><div><div>' + esc(t.note || catName) + '</div>' +
-        '<div class="meta">' + esc(t.date) + ' &middot; ' + esc(catName) + '</div></div>' +
-        '<div class="right"><span class="amt ' + (isIncome ? "good" : "") + '">' + (isIncome ? "+" : "-") + money(t.amount) + '</span>' +
+      const ico = isIncome ? EMOJI.income : emojiFor(cat);
+      const bg = isIncome ? "color-mix(in srgb, var(--good) 18%, transparent)" : tint(colorIdx(t.category));
+      return '<div class="tx"><div class="ico" style="background:' + bg + '">' + ico + "</div>" +
+        '<div class="mid"><div>' + esc(t.note || catName) + '</div><div class="meta">' + esc(t.date) + " &middot; " + esc(catName) + "</div></div>" +
+        '<div class="right"><span class="amt ' + (isIncome ? "good" : "") + '">' + (isIncome ? "+" : "-") + money(t.amount) + "</span>" +
         '<button type="button" class="small danger" data-deltx="' + esc(t.id) + '" aria-label="Delete transaction">&times;</button></div></div>';
     }).join("");
   }
 
   function renderOptions() {
     const sel = $("txCategory"), current = sel.value;
-    sel.innerHTML = state.categories.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join("");
+    sel.innerHTML = state.categories.map((c) => '<option value="' + esc(c.id) + '">' + emojiFor(c) + " " + esc(c.name) + "</option>").join("");
     if (state.categories.some((c) => c.id === current)) sel.value = current;
   }
 
@@ -249,12 +401,20 @@
   $("prevMonth").onclick = () => shiftMonth(-1);
   $("nextMonth").onclick = () => shiftMonth(1);
 
+  $("greeting").onclick = () => {
+    const n = prompt("What should I call you?", state.name || "");
+    if (n === null) return;
+    state.name = n.trim().slice(0, 24);
+    commit();
+  };
+
   $("txForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const amount = parseFloat($("txAmount").value), date = $("txDate").value;
     if (!(amount > 0) || !date) return;
+    const amt = Math.round(amount * 100) / 100;
     state.transactions.push({
-      id: uid(), type: txType, amount: Math.round(amount * 100) / 100, date,
+      id: uid(), type: txType, amount: amt, date,
       category: txType === "income" ? "income" : $("txCategory").value,
       note: $("txNote").value.trim()
     });
@@ -263,6 +423,7 @@
     const d = new Date(date + "T00:00:00");
     viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     commit();
+    toast(txType === "income" ? "Nice! +" + money(amt) + " 🎉" : "Logged " + money(amt) + " ✅");
   });
 
   $("txList").addEventListener("click", (e) => {
@@ -302,8 +463,9 @@
     const name = prompt("Category name:");
     if (!name || !name.trim()) return;
     const limit = parseFloat(prompt("Monthly limit for " + name.trim() + " ($):", "100")) || 0;
-    state.categories.push({ id: uid(), name: name.trim(), limit });
+    state.categories.push({ id: uid(), name: name.trim(), limit, emoji: PICK[state.categories.length % PICK.length] });
     commit();
+    toast("Added " + name.trim() + " 🎯");
   };
 
   $("exportBtn").onclick = () => {
