@@ -287,6 +287,18 @@
   .chips button { flex: 1; min-height: 36px; background: var(--field); color: var(--muted); border: 1px solid var(--line); font-size: 13px; }
   .chips button.on { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 
+  /* the category list scrolls instead of growing the card: slim rows, a few at a time */
+  /* no overscroll-behavior: contain here, so a swipe that reaches the end of this list carries on scrolling the page instead of getting stuck */
+  #categories { max-height: 262px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #categories .cat { padding: 8px 0; min-height: 58px; }
+  #categories .cat-top { gap: 10px; margin-bottom: 6px; }
+  #categories .cat-top .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #categories .cat-top .a { font-size: 11px; line-height: 1.2; }
+  #categories .cat-top .a b { font-size: 14px; }
+  #categories .cat-top .a .over, #categories .cat-top .a b.over { color: var(--bad); font-weight: 700; }
+  #categories .avatar { width: 30px; height: 30px; border-radius: 9px; font-size: 13px; }
+  #categories .bar-track { height: 6px; }
+  #catMoveRow button:disabled { opacity: .4; pointer-events: none; }
   .cat { padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
   .cat:last-child { border-bottom: 0; }
   .cat-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
@@ -334,6 +346,9 @@
   .theme-opt[aria-pressed="true"] .ck svg { opacity: 1; }
   .pill { display: inline-block; margin-top: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
   .pill.paid { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  button.paytoggle { min-height: 32px; margin-top: 3px; padding: 4px 12px; font-size: 12px; border-radius: 999px; background: transparent; color: var(--primary); box-shadow: inset 0 0 0 1.6px currentColor; white-space: nowrap; }
+  button.paytoggle.late { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
+  .bills-head .bh-s.late { color: var(--bad); font-weight: 700; }
   /* recurring bills: one slim row until tapped open */
   #billsCard, #goalsCard { padding: 6px 18px; }
   .goal { padding: 14px 0; border-bottom: 1px solid var(--line); }
@@ -354,8 +369,19 @@
   .bills-head .bh-r { font-weight: 800; white-space: nowrap; }
   .bills-head .bh-r small { font-weight: 600; color: var(--muted); font-size: 12px; }
   .bills-head svg { width: 18px; height: 18px; flex: none; stroke: var(--muted); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s ease; }
-  .bills-head[aria-expanded="true"] svg { transform: rotate(180deg); }
-  #billsBody { padding: 4px 0 12px; }
+  #billsBody { padding: 2px 0 10px; }
+  #billsBody .actions { margin-top: 8px; }
+  /* the list scrolls instead of growing the card: three slim rows and a sliver of the next one to hint that there is more.
+     Rows share one height (a Paid row would otherwise be shorter than a Mark paid row) so the count stays at three. */
+  #bills .tx { min-height: 44px; padding: 6px 0; gap: 10px; }
+  #bills .avatar { width: 28px; height: 28px; border-radius: 9px; font-size: 12px; }
+  #bills .tx .mid .t { font-size: 14px; line-height: 1.25; }
+  #bills .tx .mid .s { font-size: 11px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #bills .br { display: flex; align-items: center; gap: 8px; }
+  #bills .br .amt { font-size: 14px; }
+  #bills .br .pill, #bills .br button.paytoggle { margin-top: 0; }
+  #bills .br button.paytoggle { min-height: 28px; padding: 2px 10px; }
+  #bills { max-height: 154px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
   /* tab bar + fab */
   nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4); border-top: 2.6px solid var(--outline); padding-bottom: var(--safe-b); }
@@ -426,15 +452,6 @@
       <div class="meter-l"><span id="heroMeterL"></span><span id="heroMeterR"></span></div>
     </div>
     <div class="kpis" id="kpis"></div>
-    <div class="card" id="billsCard">
-      <button class="bills-head" id="billsToggle" aria-expanded="false" aria-controls="billsBody">
-        <span class="bh-l"><span class="bh-t">Recurring bills</span><span class="bh-s" id="billsSummary"></span></span>
-        <span class="bh-r" id="billsTotal"></span>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <div id="billsBody" class="hidden"><div id="bills"></div>
-        <div class="actions"><button class="small" id="addBill">Add bill</button></div></div>
-    </div>
     <div class="card" id="goalsCard">
       <button class="bills-head" id="goalsOpen" aria-haspopup="dialog">
         <span class="bh-l"><span class="bh-t">Savings goals</span><span class="bh-s" id="goalsSummary"></span></span>
@@ -463,9 +480,19 @@
   <!-- BUDGETS -->
   <section id="tab-budgets" class="hidden">
     <div class="card"><h2>Monthly budget</h2><div id="budgetTotal"></div></div>
-    <div class="card"><h2>Categories</h2><div id="categories"></div>
+    <div class="card" id="billsCard">
+      <div class="bills-head">
+        <span class="bh-l"><span class="bh-t">Recurring bills</span><span class="bh-s" id="billsSummary"></span></span>
+        <span class="bh-r" id="billsTotal"></span>
+      </div>
+      <div id="billsBody"><div id="bills"></div>
+        <div class="actions"><button class="small" id="addBill">Add bill</button></div></div>
+    </div>
+    <div class="card"><h2>Categories</h2>
+      <div class="chips" id="catKind" style="margin:0 0 6px"><button data-kind="expense" class="on">Expenses</button><button data-kind="income">Income</button></div>
+      <div id="categories"></div>
       <div class="actions"><button class="small" id="addCategory">Add category</button></div>
-      <p class="muted" style="font-size:12px;margin:10px 0 0">Tap a category to edit its name or limit.</p></div>
+      <p class="muted" id="catHint" style="font-size:12px;margin:10px 0 0"></p></div>
   </section>
 
   <!-- INSIGHTS -->
@@ -525,7 +552,9 @@
   <form id="catForm" method="dialog">
     <h3 id="catTitle">Category</h3>
     <div class="field"><label for="catName">Name</label><input id="catName" type="text" maxlength="30" required></div>
-    <div class="field"><label for="catLimit">Monthly limit ($)</label><input id="catLimit" type="number" inputmode="decimal" step="0.01" min="0" required></div>
+    <div class="field" id="catLimitField"><label for="catLimit">Monthly limit ($)</label><input id="catLimit" type="number" inputmode="decimal" step="0.01" min="0" required></div>
+    <div class="field hidden" id="catMoveRow"><label>Order in the list</label>
+      <div class="actions" style="margin-top:0"><button type="button" class="ghost small" id="catUp">&uarr; Move up</button><button type="button" class="ghost small" id="catDown">&darr; Move down</button></div></div>
     <div class="actions">
       <button type="submit" style="flex:1">Save</button>
       <button type="button" class="danger hidden" id="catDelete">Delete</button>
@@ -615,6 +644,7 @@
   let state = { categories: DEFAULTS.map((c) => ({ ...c })), incomeCategories: INCOME_DEFAULTS.map((c) => ({ ...c })), transactions: [], recurring: [] };
   let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let tab = "overview";
+  let catKind = "expense";  // which list the Categories card on Budgets is showing: "expense" or "income"
   let txType = "expense";
   let editingTx = null, editingCat = null, editingBill = null;
   let filter = { q: "", type: "all", cat: "all" };
@@ -724,7 +754,6 @@
       kpi("Daily avg", whole(avg), delta === null ? "No prior month" : pct(delta) + " vs " + prevOf(viewMonth).toLocaleDateString(undefined, { month: "short" }), delta !== null && delta > 0 ? "bad" : "") +
       kpi(s.isCur ? "Projected" : "Month total", whole(proj), s.budget > 0 ? "of " + whole(s.budget) + " budget" : "", s.budget > 0 && proj > s.budget ? "bad" : "");
 
-    renderBills();
     renderGoalsRow();
     renderDonut(s.txs);
     const recent = s.txs.slice().sort(byDateDesc).slice(0, 5);
@@ -747,42 +776,44 @@
   const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
 
   function renderBills() {
-    const k = mKey(viewMonth), list = state.recurring.slice().sort((a, b) => a.day - b.day);
+    // earliest due day first, latest last, whether a bill is still owed or already paid
+    const k = mKey(viewMonth), list = state.recurring.slice().sort((a, b) => a.day - b.day || a.name.localeCompare(b.name));
     const dueOn = (b) => new Date(viewMonth.getFullYear(), viewMonth.getMonth(), Math.min(b.day, daysIn(viewMonth)));
     const short = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     const total = list.reduce((s, b) => s + b.amount, 0), next = list.find((b) => !b.paid.includes(k) && k >= b.since);
+    // overdue: unpaid and its due day is before today, so a past month's unpaid bills count and a due-today bill doesn't
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const isLate = (b) => !b.paid.includes(k) && k >= b.since && dueOn(b) < today;
+    const late = list.filter(isLate);
     $("billsTotal").innerHTML = list.length ? whole(total) + " <small>/ mo</small>" : "";
+    $("billsSummary").classList.toggle("late", late.length > 0);
     $("billsSummary").textContent = !list.length ? "None yet. Tap to add one."
+      : late.length ? late.length + " overdue: " + late.map((b) => b.name).join(", ")
       : next ? "Next: " + next.name + " · " + short(dueOn(next))
       : list.every((b) => k < b.since) ? "Starts next month" : "Nothing more due this month";
     if (!list.length) { $("bills").innerHTML = '<div class="empty">Add rent, subscriptions or anything that comes out each month.</div>'; return; }
     $("bills").innerHTML = list.map((b) => {
-      const due = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), Math.min(b.day, daysIn(viewMonth)));
       const c = catById(b.category), i = cIdx(b.category);
-      const pill = b.paid.includes(k) ? '<span class="pill paid">Paid</span>'
-        : k >= b.since ? '<span class="pill">Due ' + due.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</span>"
+      const pill = b.paid.includes(k) ? '<span class="pill paid">&#10003; Paid</span>'
+        : k >= b.since ? '<button type="button" class="paytoggle' + (isLate(b) ? " late" : "") + '" data-pay="' + esc(b.id) + '" aria-pressed="false" aria-label="Mark ' + esc(b.name) + (isLate(b) ? " paid, overdue" : " paid") + '">' + (isLate(b) ? "Overdue" : "Mark paid") + "</button>"
         : '<span class="pill">Starts ' + new Date(+b.since.slice(0, 4), +b.since.slice(5, 7) - 1, 1).toLocaleDateString(undefined, { month: "short" }) + "</span>";
       return '<div class="tx" data-bill="' + esc(b.id) + '" tabindex="0" role="button"><div class="avatar" style="background:' + tint(i) + ";color:" + cVar(i) + '">' + esc(initial(b.name)) + "</div>" +
         '<div class="mid"><div class="t">' + esc(b.name) + '</div><div class="s">' + esc(c ? c.name : "Deleted category") + " &middot; the " + ord(b.day) + "</div></div>" +
-        '<div style="text-align:right"><div class="amt">' + money(b.amount) + "</div>" + pill + "</div></div>";
+        '<div class="br"><div class="amt">' + money(b.amount) + "</div>" + pill + "</div></div>";
     }).join("");
   }
 
-  // Adds an expense for every bill whose due date has arrived and that hasn't been charged for that month yet.
-  // Runs when the app opens or comes back to the front, so a bill is caught up even if the app was closed on its due day.
-  function applyRecurring() {
-    const now = new Date(), nowK = mKey(now);
-    let added = 0;
-    state.recurring.forEach((b) => {
-      let d = new Date(+b.since.slice(0, 4), +b.since.slice(5, 7) - 1, 1);
-      for (let n = 0; n < 36 && mKey(d) <= nowK; n++, d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-        const k = mKey(d), due = new Date(d.getFullYear(), d.getMonth(), Math.min(b.day, daysIn(d)));
-        if (b.paid.includes(k) || due > now) continue;
-        state.transactions.push({ id: uid(), type: "expense", amount: b.amount, date: dstr(due), category: b.category, note: b.name, bill: b.id });
-        b.paid.push(k); added++;
-      }
-    });
-    return added;
+  // A bill only becomes an expense when it is marked paid, and a paid bill stays paid: there is no way to un-mark it.
+  // This month it is dated today (when it was actually paid); any other month, on its due day.
+  function markBillPaid(id) {
+    const b = state.recurring.find((r) => r.id === id);
+    const k = mKey(viewMonth), now = new Date();
+    if (!b || b.paid.includes(k)) return;
+    if (!confirm('Mark "' + b.name + '" paid? This adds a ' + money(b.amount) + " expense and can't be undone.")) return;
+    const when = k === mKey(now) ? now : new Date(viewMonth.getFullYear(), viewMonth.getMonth(), Math.min(b.day, daysIn(viewMonth)));
+    state.transactions.push({ id: uid(), type: "expense", amount: b.amount, date: dstr(when), category: b.category, note: b.name, bill: b.id });
+    b.paid.push(k);
+    commit(); toast(b.name + " paid and added to Activity");
   }
   // a new bill starts at its next due date (today counts), so adding it mid-month never double-charges a bill already logged by hand
   function firstMonth(day) {
@@ -847,13 +878,23 @@
     $("budgetTotal").innerHTML = '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:24px;font-weight:800">' + whole(s.spent) + '</span><span class="muted">of ' + whole(s.budget) + "</span></div>" +
       '<div class="bar-track" style="margin-top:10px"><div class="bar-fill" style="width:' + Math.min(100, used) + "%;background:" + (used > 100 ? "var(--bad)" : "var(--primary)") + '"></div></div>' +
       '<div class="muted" style="font-size:12px;margin-top:6px">' + (s.budget - s.spent >= 0 ? whole(s.budget - s.spent) + " remaining across all categories" : whole(s.spent - s.budget) + " over total budget") + "</div>";
-    $("categories").innerHTML = state.categories.length ? state.categories.map((c, i) => {
-      const sp = by[c.id] || 0, p = c.limit > 0 ? Math.min(100, (sp / c.limit) * 100) : 0;
-      const over = c.limit > 0 && sp > c.limit, warn = !over && c.limit > 0 && sp / c.limit >= 0.8;
-      const st = over ? "Over by " + money(sp - c.limit) : warn ? money(c.limit - sp) + " left, nearly at limit" : money(Math.max(0, c.limit - sp)) + " left";
-      return '<div class="cat" data-cat="' + esc(c.id) + '" tabindex="0" role="button"><div class="cat-top"><div class="avatar" style="background:' + tint(i % 8) + ";color:" + cVar(i % 8) + '">' + esc(initial(c.name)) + '</div><div class="n">' + esc(c.name) + '</div><div class="a"><b>' + money(sp) + "</b><br>of " + money(c.limit) + "</div></div>" +
-        '<div class="bar-track"><div class="bar-fill" style="width:' + p + "%;background:" + (over ? "var(--bad)" : cVar(i % 8)) + '"></div></div><div class="st' + (over ? " over" : warn ? " warn" : "") + '">' + st + "</div></div>";
-    }).join("") : '<div class="empty">No categories yet.</div>';
+    document.querySelectorAll("#catKind button").forEach((b) => b.classList.toggle("on", b.dataset.kind === catKind));
+    $("catHint").textContent = catKind === "income" ? "Tap a category to rename it, move it or remove it." : "Tap a category to edit its limit, rename it or move it.";
+    if (catKind === "income") {
+      const got = {};
+      s.txs.forEach((t) => { if (t.type === "income") got[t.category] = (got[t.category] || 0) + t.amount; });
+      $("categories").innerHTML = state.incomeCategories.map((c) =>
+        '<div class="cat" data-cat="' + esc(c.id) + '" tabindex="0" role="button"><div class="cat-top" style="margin:0"><div class="avatar" style="background:' + tint(2) + ";color:" + cVar(2) + '">' + esc(initial(c.name)) + '</div><div class="n">' + esc(c.name) + '</div><div class="a"><b>' + money(got[c.id] || 0) + "</b><br>this month</div></div></div>").join("");
+    } else {
+      // one slim row per category: the amount spent over what is left of the limit, and a bar that turns amber near the limit and red over it
+      $("categories").innerHTML = state.categories.length ? state.categories.map((c, i) => {
+        const sp = by[c.id] || 0, p = c.limit > 0 ? Math.min(100, (sp / c.limit) * 100) : 0;
+        const over = c.limit > 0 && sp > c.limit, warn = !over && c.limit > 0 && sp / c.limit >= 0.8;
+        return '<div class="cat" data-cat="' + esc(c.id) + '" tabindex="0" role="button"><div class="cat-top"><div class="avatar" style="background:' + tint(i % 8) + ";color:" + cVar(i % 8) + '">' + esc(initial(c.name)) + '</div><div class="n">' + esc(c.name) + '</div><div class="a"><b' + (over ? ' class="over"' : "") + ">" + money(sp) + "</b><br>" + (over ? '<span class="over">Over by ' + money(sp - c.limit) + "</span>" : "of " + money(c.limit)) + "</div></div>" +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + p + "%;background:" + (over ? "var(--bad)" : warn ? "var(--warn)" : cVar(i % 8)) + '"></div></div></div>';
+      }).join("") : '<div class="empty">No categories yet.</div>';
+    }
+    renderBills();
   }
 
   function renderInsights() {
@@ -996,27 +1037,62 @@
   });
 
   /* ---------- Category dialog ---------- */
+  // The dialog edits whichever list the Categories card is showing; income categories have a name but no monthly limit.
+  const catList = () => (catKind === "income" ? state.incomeCategories : state.categories);
+  function syncMove() {
+    const i = editingCat ? catList().indexOf(editingCat) : -1;
+    $("catUp").disabled = i <= 0;
+    $("catDown").disabled = i < 0 || i >= catList().length - 1;
+  }
   function openCat(id) {
-    editingCat = id ? catById(id) : null;
-    $("catTitle").textContent = editingCat ? "Edit category" : "New category";
+    const inc = catKind === "income";
+    editingCat = id ? catList().find((c) => c.id === id) : null;
+    $("catTitle").textContent = (editingCat ? "Edit " : "New ") + (inc ? "income category" : "category");
     $("catName").value = editingCat ? editingCat.name : "";
-    $("catLimit").value = editingCat ? editingCat.limit : 100;
+    $("catLimitField").classList.toggle("hidden", inc);
+    $("catLimit").required = !inc;
+    $("catLimit").value = editingCat && !inc ? editingCat.limit : 100;
     $("catDelete").classList.toggle("hidden", !editingCat);
+    $("catMoveRow").classList.toggle("hidden", !editingCat);
+    syncMove();
     $("catDialog").showModal();
   }
+  // swaps with the neighbour and saves at once, so the dialog stays open for another nudge
+  function moveCat(dir) {
+    const list = catList(), i = list.indexOf(editingCat), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    commit(); syncMove();
+  }
+  $("catUp").onclick = () => moveCat(-1);
+  $("catDown").onclick = () => moveCat(1);
+  $("catKind").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-kind]");
+    if (b) { catKind = b.dataset.kind; renderBudgets(); }
+  });
   $("addCategory").onclick = () => openCat(null);
   $("catCancel").onclick = () => $("catDialog").close();
   $("catDelete").onclick = () => {
-    if (!editingCat || !confirm('Delete "' + editingCat.name + '"? Its transactions will stay but show as "Deleted category".')) return;
-    state.categories = state.categories.filter((c) => c.id !== editingCat.id);
+    if (!editingCat) return;
+    if (catKind === "income") {
+      if (state.incomeCategories.length <= 1) { alert("Keep at least one income category so you can still add income."); return; }
+      if (!confirm('Delete "' + editingCat.name + '"? Its income will stay but show as "Income".')) return;
+      state.incomeCategories = state.incomeCategories.filter((c) => c.id !== editingCat.id);
+    } else {
+      if (!confirm('Delete "' + editingCat.name + '"? Its transactions will stay but show as "Deleted category".')) return;
+      state.categories = state.categories.filter((c) => c.id !== editingCat.id);
+    }
     $("catDialog").close(); commit();
   };
   $("catForm").addEventListener("submit", (e) => {
     e.preventDefault();
+    const inc = catKind === "income";
     const name = $("catName").value.trim(), limit = parseFloat($("catLimit").value);
-    if (!name || !(limit >= 0)) return;
+    if (!name || (!inc && !(limit >= 0))) return;
     const lim = Math.round(limit * 100) / 100;
-    if (editingCat) { editingCat.name = name; editingCat.limit = lim; } else state.categories.push({ id: uid(), name, limit: lim });
+    if (editingCat) { editingCat.name = name; if (!inc) editingCat.limit = lim; }
+    else if (inc) state.incomeCategories.push({ id: uid(), name });
+    else state.categories.push({ id: uid(), name, limit: lim });
     $("catDialog").close(); commit(); toast("Category saved");
   });
 
@@ -1048,8 +1124,7 @@
     if (editingBill) { Object.assign(editingBill, rec); if (!editingBill.paid.length) editingBill.since = firstMonth(day); }
     else state.recurring.push({ id: uid(), ...rec, since: firstMonth(day), paid: [] });
     $("billDialog").close();
-    const added = applyRecurring();
-    commit(); toast(added ? "Bill saved and added to Activity" : "Bill saved");
+    commit(); toast("Bill saved");
   });
 
   /* ---------- Looks (themes) and the Settings page ---------- */
@@ -1216,12 +1291,11 @@
   $("nextMonth").onclick = () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1); render(); };
   ["recent", "txList"].forEach((id) => $(id).addEventListener("click", (e) => { const r = e.target.closest("[data-edit]"); if (r) openTx(r.dataset.edit); }));
   $("categories").addEventListener("click", (e) => { const r = e.target.closest("[data-cat]"); if (r) openCat(r.dataset.cat); });
-  $("billsToggle").onclick = () => {
-    const open = $("billsToggle").getAttribute("aria-expanded") !== "true";
-    $("billsToggle").setAttribute("aria-expanded", open ? "true" : "false");
-    $("billsBody").classList.toggle("hidden", !open);
-  };
-  $("bills").addEventListener("click", (e) => { const r = e.target.closest("[data-bill]"); if (r) openBill(r.dataset.bill); });
+  $("bills").addEventListener("click", (e) => {
+    const p = e.target.closest("[data-pay]");
+    if (p) { markBillPaid(p.dataset.pay); return; }
+    const r = e.target.closest("[data-bill]"); if (r) openBill(r.dataset.bill);
+  });
   // rows act as buttons: Enter or Space opens them from the keyboard
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
@@ -1931,10 +2005,7 @@
   buildScene();
   load();
   ensureIncome();
-  if (applyRecurring()) save();
   render();
-  // the home-screen app can sit open for days: catch up on bills whenever it comes back to the front
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && applyRecurring()) commit(); });
 })();
 </script>
 </body>
