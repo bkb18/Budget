@@ -251,7 +251,7 @@
   .hero .two .l { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; opacity: .75; font-weight: 700; }
   .hero .two .v { font-size: clamp(14px, 4.4vw, 17px); font-weight: 800; overflow-wrap: anywhere; }
 
-  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
   .kpi { border-radius: 16px; padding: 12px; }
   .kpi .l { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi .v { font-size: clamp(15px, 4.6vw, 19px); font-weight: 800; margin-top: 4px; overflow-wrap: anywhere; }
@@ -306,6 +306,15 @@
   th:first-child, td:first-child { text-align: left; }
   td { text-align: right; padding: 9px 0; border-top: 1px solid var(--line); }
   td:first-child { display: flex; align-items: center; gap: 8px; }
+  /* Insights boxes are kept small so the projection card fits on the first screen */
+  #tab-insights .card { padding: 12px 14px; margin-bottom: 10px; }
+  #tab-insights h2 { font-size: 12px; margin-bottom: 6px; }
+  #tab-insights table { font-size: 13px; }
+  #tab-insights td { padding: 6px 0; }
+  #tab-insights th { padding-bottom: 4px; }
+  #tab-insights .key { margin-top: 2px; font-size: 11px; gap: 10px; }
+  #tab-insights .empty { padding: 8px 0; }
+  #tab-insights .note { font-size: 11px; color: var(--muted); margin: 6px 0 0; line-height: 1.35; }
 
   /* the plain look has no scenery behind the cards, so the frosted blur would only cost speed */
   :root[data-skin="plain"] .card, :root[data-skin="plain"] .kpi, :root[data-skin="plain"] .month-nav, :root[data-skin="plain"] nav { -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -473,6 +482,7 @@
 
   <!-- INSIGHTS -->
   <section id="tab-insights" class="hidden">
+    <div class="card"><h2>Projection vs. actual</h2><div id="deviance"></div></div>
     <div class="card"><h2>This month: spent vs. budget</h2><div id="pace"></div></div>
     <div class="card"><h2>Income vs. spending, last 6 months</h2><div id="bars"></div></div>
     <div class="card"><h2>Category change vs last month</h2><div id="compare"></div></div>
@@ -761,12 +771,13 @@
     const prevSpent = sumOf(monthTx(mKey(prevOf(viewMonth))), "expense");
     const rate = s.income > 0 ? ((s.left + s.saved) / s.income) * 100 : null;  // the share of income not spent, whether or not it went into a goal
     const avg = s.elapsed > 0 ? s.spent / s.elapsed : 0;
-    const proj = s.isCur && s.elapsed > 0 ? (s.spent / s.elapsed) * s.dim : s.spent;
+    const pj = projection(viewMonth);
     const delta = prevSpent > 0 ? ((s.spent - prevSpent) / prevSpent) * 100 : null;
     $("kpis").innerHTML =
       kpi("Savings", rate === null ? "n/a" : Math.round(rate) + "%", rate === null ? "Add income" : rate >= 20 ? "Healthy" : rate >= 0 ? "Room to grow" : "Overspent", rate !== null && rate < 0 ? "bad" : "") +
       kpi("Daily avg", whole(avg), delta === null ? "No prior month" : pct(delta) + " vs " + prevOf(viewMonth).toLocaleDateString(undefined, { month: "short" }), delta !== null && delta > 0 ? "bad" : "") +
-      kpi(s.isCur ? "Projected" : "Month total", whole(proj), s.budget > 0 ? "of " + whole(s.budget) + " budget" : "", s.budget > 0 && proj > s.budget ? "bad" : "");
+      kpi("Projected expenses", whole(pj.expenses), s.budget > 0 ? "of " + whole(s.budget) + " budget" : pj.bills ? pj.bills + " bill" + (pj.bills === 1 ? "" : "s") + " this month" : "Add recurring bills", s.budget > 0 && pj.expenses > s.budget ? "bad" : "") +
+      kpi("Projected savings", (pj.savings < 0 ? "&minus;" : "") + whole(Math.abs(pj.savings)), pj.income > 0 ? "of " + whole(pj.income) + " income" : "Add income or a paycheck", pj.savings < 0 ? "bad" : "");
 
     renderGoalsRow();
     renderDonut(s.txs);
@@ -940,13 +951,46 @@
   }
 
   function renderInsights() {
-    renderPace(); renderBars(); renderCompare();
+    renderDeviance(); renderPace(); renderBars(); renderCompare();
+  }
+
+  // How the month looks on paper: the bills due plus the pay days (and other income logged) that fall in it, in full and as of today.
+  // Projected expenses = every recurring bill for the month, paid or not. Projected savings = projected income - projected expenses.
+  function projection(vm) {
+    const k = mKey(vm), now = new Date(), dim = daysIn(vm), cut = k === mKey(now) ? now.getDate() : (vm < now ? dim : 0);  // cut: the last day that counts as "so far"
+    const bills = state.recurring.filter((b) => k >= b.since);
+    const other = sumOf(monthTx(k).filter((t) => !t.paycheck), "income");
+    let pay = 0, payNow = 0;
+    state.paychecks.forEach((p) => {
+      for (let n = 0; n < 400; n++) {
+        const d = payDate(p, n), dk = mKey(d);
+        if (dk > k) break;
+        if (dk === k) { pay += p.amount; if (d.getDate() <= cut) payNow += p.amount; }
+      }
+    });
+    const expenses = bills.reduce((s, b) => s + b.amount, 0);
+    const expNow = bills.filter((b) => Math.min(b.day, dim) <= cut).reduce((s, b) => s + b.amount, 0);
+    return { bills: bills.length, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
+  }
+
+  // Projected vs actual spending and savings. "Off plan" is the actual figure minus what was planned by today (the whole plan for a finished month).
+  function renderDeviance() {
+    const s = stats(), pj = projection(viewMonth);
+    if (!pj.cut) { $("deviance").innerHTML = '<div class="empty">This month hasn\'t started yet.</div>'; return; }
+    if (!pj.bills && !state.paychecks.length) { $("deviance").innerHTML = '<div class="empty">Add recurring bills and a paycheck in Budgets to compare your month with the plan.</div>'; return; }
+    const signed = (n) => (n < 0 ? "&minus;" : "") + whole(Math.abs(n));
+    const rows = [["Spending", pj.expenses, s.spent, pj.expNow, true], ["Savings", pj.savings, s.income - s.spent, pj.savNow, false]];
+    $("deviance").innerHTML = "<table><thead><tr><th>&nbsp;</th><th>Projected</th><th>" + (s.isCur ? "So far" : "Actual") + "</th><th>Off plan</th></tr></thead><tbody>" + rows.map((r) => {
+      const dv = r[2] - r[3], off = Math.abs(dv) < 0.5 ? 0 : dv, bad = r[4] ? off > 0 : off < 0;
+      return "<tr><td>" + r[0] + "</td><td>" + signed(r[1]) + "</td><td>" + signed(r[2]) + '</td><td class="' + (!off ? "muted" : bad ? "bad" : "good") + '">' + (off > 0 ? "+" : "") + signed(off) + "</td></tr>";
+    }).join("") + "</tbody></table>" +
+      (s.isCur ? '<p class="note">Off plan = so far minus what was planned by today: ' + whole(pj.expNow) + " of bills due and " + signed(pj.savNow) + " saved.</p>" : "");
   }
 
   function renderPace() {
     const s = stats();
     if (!s.txs.some((t) => t.type === "expense")) { $("pace").innerHTML = '<div class="empty">Spending pace appears once you log an expense.</div>'; return; }
-    const W = 320, H = 156, L = 38, R = 8, T = 12, B = 124;
+    const W = 320, H = 118, L = 38, R = 8, T = 12, B = 88;
     const daily = new Array(s.dim + 1).fill(0);
     s.txs.forEach((t) => { if (t.type === "expense") daily[Math.min(s.dim, parseInt(t.date.slice(8, 10), 10) || 1)] += t.amount; });
     const upto = s.isCur ? s.elapsed : s.dim;
@@ -969,7 +1013,7 @@
       '<text x="' + x(mid) + '" y="' + (B + 16) + '" text-anchor="middle">' + mon + " " + mid + "</text>" +
       '<text x="' + x(s.dim) + '" y="' + (B + 16) + '" text-anchor="end">' + mon + " " + s.dim + "</text></svg>" +
       '<div class="key"><span><i class="dot" style="background:var(--primary)"></i>Spent so far</span>' + (s.budget > 0 ? '<span><i class="dot" style="background:var(--muted)"></i>Your ' + whole(s.budget) + ' budget, spread evenly</span>' : "") + "</div>" +
-      '<p class="muted" style="font-size:13px;text-align:center;margin:10px 0 0">' + (s.budget > 0 ? (run <= s.budget * (upto / s.dim) ? "You've spent less than an even share of your budget so far." : "You've spent more than an even share of your budget so far.") : "Set category limits in Budgets to see your target line.") + "</p>";
+      '<p class="muted" style="font-size:12px;text-align:center;margin:4px 0 0">' + (s.budget > 0 ? (run <= s.budget * (upto / s.dim) ? "You've spent less than an even share of your budget so far." : "You've spent more than an even share of your budget so far.") : "Set category limits in Budgets to see your target line.") + "</p>";
   }
 
   /* Pick tidy y-axis values (e.g. $0, $500, $1k, $1.5k, $2k) for a chart whose largest value is `max`. */
@@ -992,9 +1036,9 @@
     const data = months.map((d) => { const t = monthTx(mKey(d)); return { d, inc: sumOf(t, "income"), sp: sumOf(t, "expense") }; });
     if (!data.some((x) => x.inc || x.sp)) { $("bars").innerHTML = '<div class="empty">Add transactions to see your trend.</div>'; return; }
     const ax = axisFor(Math.max(1, ...data.map((x) => Math.max(x.inc, x.sp))));
-    const W = 320, L = 38, base = 124, top = 12, gap = (W - L - 4) / 6, bw = 15, h = (v) => (v / ax.top) * (base - top);
+    const W = 320, L = 38, base = 86, top = 12, gap = (W - L - 4) / 6, bw = 15, h = (v) => (v / ax.top) * (base - top);
     const yy = (v) => base - h(v);
-    let out = '<svg class="chart-svg" viewBox="0 0 ' + W + ' 146" role="img" aria-label="Total income and total spending for each of the last 6 months, in dollars">' + gridSvg(ax, yy, L, W - 4);
+    let out = '<svg class="chart-svg" viewBox="0 0 ' + W + ' 106" role="img" aria-label="Total income and total spending for each of the last 6 months, in dollars">' + gridSvg(ax, yy, L, W - 4);
     data.forEach((x, i) => {
       const cx = L + gap * i + gap / 2, cur = mKey(x.d) === mKey(viewMonth), nm = x.d.toLocaleDateString(undefined, { month: "long" });
       // corner radius never exceeds half the bar's height, so short bars stay crisp instead of turning into blobs
@@ -2058,7 +2102,7 @@
   /* ---------- Auto-update ---------- */
   // The server's copy is read fresh (never from the phone's saved copy). If its BUILD stamp differs from this one, reload onto it.
   // Data is saved on every change, so a reload loses nothing. It waits while a form is open, and tries each new build once per session.
-  const BUILD = "2026-11-01.1845";
+  const BUILD = "2026-11-01.1856";
   async function checkUpdate() {
     if (!navigator.onLine || document.hidden) return;
     try {
