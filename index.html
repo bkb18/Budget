@@ -335,7 +335,16 @@
   .pill { display: inline-block; margin-top: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
   .pill.paid { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
   /* recurring bills: one slim row until tapped open */
-  #billsCard { padding: 6px 18px; }
+  #billsCard, #goalsCard { padding: 6px 18px; }
+  .goal { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .goal:first-child { padding-top: 2px; }
+  .goal:last-child { border-bottom: 0; }
+  .goal-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .goal-top b { font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+  .goal-top span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .goal .st { font-size: 12px; color: var(--muted); margin: 7px 0 2px; }
+  .goal .st.done { color: var(--good); font-weight: 700; }
+  #goalsDialog { max-height: 86vh; overflow-y: auto; }
   .bills-head { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 0; border-radius: 12px; background: transparent; color: var(--ink); text-align: left; font-weight: 400; }
   .bills-head:active { transform: none; }
   .bills-head .bh-l { flex: 1; min-width: 0; }
@@ -423,6 +432,13 @@
       <div id="billsBody" class="hidden"><div id="bills"></div>
         <div class="actions"><button class="small" id="addBill">Add bill</button></div></div>
     </div>
+    <div class="card" id="goalsCard">
+      <button class="bills-head" id="goalsOpen" aria-haspopup="dialog">
+        <span class="bh-l"><span class="bh-t">Savings goals</span><span class="bh-s" id="goalsSummary"></span></span>
+        <span class="bh-r" id="goalsTotal"></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
     <div class="card"><h2>Spending by category</h2><div id="donut"></div></div>
     <div class="card"><h2>Recent activity</h2><div id="recent"></div>
       <div class="actions"><button class="small ghost" data-goto="activity">View all</button></div></div>
@@ -433,7 +449,7 @@
     <div class="card">
       <input id="search" type="search" placeholder="Search notes or categories" aria-label="Search">
       <div class="chips" id="typeChips">
-        <button data-type="all" class="on">All</button><button data-type="expense">Expenses</button><button data-type="income">Income</button>
+        <button data-type="all" class="on">All</button><button data-type="expense">Expenses</button><button data-type="income">Income</button><button data-type="saving">Savings</button>
       </div>
       <div class="filters"><select id="filterCat" aria-label="Filter by category"></select>
         <button class="ghost" id="csvBtn">Export CSV</button></div>
@@ -511,6 +527,42 @@
     </div>
   </form>
 </dialog>
+<dialog id="goalsDialog">
+  <h3>Savings goals</h3>
+  <div id="goalsList"></div>
+  <p class="muted" id="goalsNote" style="font-size:12px;margin:10px 0 0"></p>
+  <div class="actions">
+    <button id="goalAdd" style="flex:1">Add a goal</button>
+    <button class="ghost" id="goalsClose">Close</button>
+  </div>
+</dialog>
+
+<dialog id="goalDialog">
+  <form id="goalForm" method="dialog">
+    <h3 id="goalTitle">New savings goal</h3>
+    <div class="field"><label for="goalName">What are you saving for?</label><input id="goalName" type="text" maxlength="30" placeholder="e.g. Emergency fund" required></div>
+    <div class="field"><label for="goalTarget">Target amount ($)</label><input id="goalTarget" type="number" inputmode="numeric" step="1" min="1" placeholder="1000" required></div>
+    <div class="field"><label for="goalBy">Save it by (optional)</label><input id="goalBy" type="date"></div>
+    <div class="actions">
+      <button type="submit" style="flex:1">Save</button>
+      <button type="button" class="danger hidden" id="goalDelete">Delete</button>
+      <button type="button" class="ghost" id="goalCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="goalMoneyDialog">
+  <form id="goalMoneyForm" method="dialog">
+    <h3 id="goalMoneyTitle">Add money</h3>
+    <div class="field"><label for="goalMoneyAmt">Amount ($)</label><input id="goalMoneyAmt" type="number" inputmode="numeric" step="1" min="1" placeholder="0" required></div>
+    <p class="muted" id="goalMoneyHint" style="font-size:12px;margin:0 0 4px"></p>
+    <div class="actions">
+      <button type="submit" style="flex:1">Save</button>
+      <button type="button" class="ghost" id="goalMoneyCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="billDialog">
   <form id="billForm" method="dialog">
     <h3 id="billTitle">Recurring bill</h3>
@@ -575,7 +627,8 @@
   const catById = (id) => state.categories.find((c) => c.id === id);
   const incById = (id) => (state.incomeCategories || []).find((c) => c.id === id);
   const ensureIncome = () => { if (!Array.isArray(state.incomeCategories) || !state.incomeCategories.length) state.incomeCategories = INCOME_DEFAULTS.map((c) => ({ ...c })); };
-  const catName = (t) => t.type === "income" ? (incById(t.category) || { name: "Income" }).name : (catById(t.category) || { name: "Deleted category" }).name;
+  const catName = (t) => t.type === "saving" ? ((state.goals || []).find((g) => g.id === t.goal) || { name: "Closed goal" }).name
+    : t.type === "income" ? (incById(t.category) || { name: "Income" }).name : (catById(t.category) || { name: "Deleted category" }).name;
   const cIdx = (id) => { const i = state.categories.findIndex((c) => c.id === id); return (i < 0 ? 7 : i) % 8; };
   const cVar = (i) => "var(--c" + i + ")";
   const tint = (i) => "color-mix(in srgb, var(--c" + i + ") 16%, transparent)";
@@ -592,10 +645,17 @@
     if (!Array.isArray(state.recurring)) state.recurring = [];
     state.recurring.forEach((b) => { if (!Array.isArray(b.paid)) b.paid = []; });
   };
+  // Savings goals (at most 3): { id, name, target, by?: "YYYY-MM-DD" }. The money in a goal is not stored on the goal: it is the sum of the
+  // transactions { type: "saving", goal: <goal id>, amount } (negative = taken back out), so it counts against "Left to spend" in the month
+  // it was set aside and shows up in Activity. Older saved data has no `goals` list at all.
+  const MAX_GOALS = 3;
+  const ensureGoals = () => { if (!Array.isArray(state.goals)) state.goals = []; };
+  const goalById = (id) => state.goals.find((g) => g.id === id);
+  const goalSaved = (id) => state.transactions.filter((t) => t.type === "saving" && t.goal === id).reduce((s, t) => s + t.amount, 0);
 
   function load() {
     try { const p = JSON.parse(localStorage.getItem(KEY)); if (validState(p)) state = p; } catch (e) { /* use defaults */ }
-    ensureRecurring();
+    ensureRecurring(); ensureGoals();
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
@@ -625,12 +685,12 @@
 
   function stats() {
     const txs = monthTx(mKey(viewMonth));
-    const income = sumOf(txs, "income"), spent = sumOf(txs, "expense");
+    const income = sumOf(txs, "income"), spent = sumOf(txs, "expense"), saved = sumOf(txs, "saving");  // saved: put toward savings goals this month
     const now = new Date(), isCur = mKey(now) === mKey(viewMonth);
     const dim = daysIn(viewMonth);
     const elapsed = isCur ? now.getDate() : (viewMonth > now ? 0 : dim);
     const budget = state.categories.reduce((s, c) => s + (c.limit || 0), 0);
-    return { txs, income, spent, left: income - spent, isCur, dim, elapsed, budget };
+    return { txs, income, spent, saved, left: income - spent - saved, isCur, dim, elapsed, budget };
   }
 
   function renderOverview() {
@@ -649,7 +709,7 @@
       : "After " + s.txs.length + " transaction" + (s.txs.length === 1 ? "" : "s") + " this month.";
 
     const prevSpent = sumOf(monthTx(mKey(prevOf(viewMonth))), "expense");
-    const rate = s.income > 0 ? (s.left / s.income) * 100 : null;
+    const rate = s.income > 0 ? ((s.left + s.saved) / s.income) * 100 : null;  // the share of income not spent, whether or not it went into a goal
     const avg = s.elapsed > 0 ? s.spent / s.elapsed : 0;
     const proj = s.isCur && s.elapsed > 0 ? (s.spent / s.elapsed) * s.dim : s.spent;
     const delta = prevSpent > 0 ? ((s.spent - prevSpent) / prevSpent) * 100 : null;
@@ -659,6 +719,7 @@
       kpi(s.isCur ? "Projected" : "Month total", whole(proj), s.budget > 0 ? "of " + whole(s.budget) + " budget" : "", s.budget > 0 && proj > s.budget ? "bad" : "");
 
     renderBills();
+    renderGoalsRow();
     renderDonut(s.txs);
     const recent = s.txs.slice().sort(byDateDesc).slice(0, 5);
     $("recent").innerHTML = recent.length ? recent.map(txRow).join("") : '<div class="empty">No transactions this month. Tap + to add one.</div>';
@@ -667,13 +728,14 @@
   const byDateDesc = (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
 
   function txRow(t) {
-    const inc = t.type === "income";
+    const inc = t.type === "income", sv = t.type === "saving";
     const name = catName(t);
-    const i = inc ? 2 : cIdx(t.category);
+    const i = inc ? 2 : sv ? 6 : cIdx(t.category);
     const when = new Date(t.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const title = sv ? (t.amount < 0 ? "Taken out of " : "Saved to ") + name : (t.note || name);
     return '<div class="tx" data-edit="' + esc(t.id) + '" tabindex="0" role="button"><div class="avatar" style="background:' + tint(i) + ";color:" + cVar(i) + '">' + esc(initial(name)) + "</div>" +
-      '<div class="mid"><div class="t">' + esc(t.note || name) + '</div><div class="s">' + esc(name) + (t.bill ? " &middot; Recurring" : "") + " &middot; " + esc(when) + "</div></div>" +
-      '<div class="amt ' + (inc ? "good" : "") + '">' + (inc ? "+" : "&minus;") + money(t.amount) + "</div></div>";
+      '<div class="mid"><div class="t">' + esc(title) + '</div><div class="s">' + (sv ? "Savings goal" : esc(name)) + (t.bill ? " &middot; Recurring" : "") + " &middot; " + esc(when) + "</div></div>" +
+      '<div class="amt ' + (inc || (sv && t.amount < 0) ? "good" : "") + '">' + (inc || (sv && t.amount < 0) ? "+" : "&minus;") + money(Math.abs(t.amount)) + "</div></div>";
   }
 
   const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
@@ -880,6 +942,16 @@
     renderCatOptions();
   }
   function openTx(id) {
+    const tapped = id ? state.transactions.find((t) => t.id === id) : null;
+    if (tapped && tapped.type === "saving") {  // savings entries aren't edited like other transactions: they can only be removed (or managed from the goal)
+      if (tapped.amount > 0 && goalById(tapped.goal) && goalSaved(tapped.goal) - tapped.amount < -.001) {  // a goal can't go below $0
+        alert("Removing this would leave " + catName(tapped) + " below $0, because money was taken out of it afterwards. Remove that take-out first."); return;
+      }
+      if (confirm("Remove this savings entry (" + money(Math.abs(tapped.amount)) + (tapped.amount < 0 ? " taken out of " : " saved to ") + catName(tapped) + ")? It will change the goal's total and your Left to spend.")) {
+        state.transactions = state.transactions.filter((t) => t.id !== tapped.id); commit(); renderGoals(); toast("Entry removed");
+      }
+      return;
+    }
     editingTx = id ? state.transactions.find((t) => t.id === id) : null;
     $("txTitle").textContent = editingTx ? "Edit transaction" : "New transaction";
     $("txDelete").classList.toggle("hidden", !editingTx);
@@ -1007,6 +1079,93 @@
   $("settingsBack").onclick = () => { tab = lastTab; render(); window.scrollTo(0, 0); };
   $("themes").addEventListener("click", (e) => { const b = e.target.closest("[data-skin-id]"); if (b && b.dataset.skinId !== root.getAttribute("data-skin")) setSkin(b.dataset.skinId, true); });
 
+  /* ---------- Savings goals: a row on Overview that opens a popup with up to 3 goals ---------- */
+  let editingGoal = null, moneyGoal = null, moneyMode = "add";
+  const goalPct = (g) => Math.max(0, Math.min(100, Math.round((goalSaved(g.id) / g.target) * 100)));
+  function goalNote(g) {  // a one-line forecast: what's needed per month for a date, or how long at the recent pace
+    const saved = goalSaved(g.id), left = g.target - saved;
+    if (left <= 0) return { text: "Goal reached!", done: true };
+    const now = new Date();
+    if (g.by) {
+      const by = new Date(g.by + "T00:00:00"), label = by.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      if (by <= now) return { text: money(left) + " still to go, past its " + label + " date." };
+      const months = Math.max(1, Math.ceil((by - now) / 2629800000));
+      return { text: "Needs about " + money(left / months) + " a month to reach it by " + label + "." };
+    }
+    const since = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    const recent = state.transactions.filter((t) => t.type === "saving" && t.goal === g.id && new Date(t.date + "T00:00:00") >= since).reduce((s, t) => s + t.amount, 0), pace = recent / 3;
+    if (pace > 0) { const m = Math.ceil(left / pace); return { text: "At your pace, about " + m + (m === 1 ? " month" : " months") + " to go." }; }
+    return { text: money(left) + " to go. Add money to see a forecast." };
+  }
+  function renderGoalsRow() {
+    const gs = state.goals;
+    $("goalsTotal").innerHTML = gs.length ? whole(gs.reduce((s, g) => s + goalSaved(g.id), 0)) + " <small>saved</small>" : "";
+    if (!gs.length) { $("goalsSummary").textContent = "None yet. Tap to set one up."; return; }
+    const open = gs.filter((g) => goalSaved(g.id) < g.target).sort((a, b) => goalPct(b) - goalPct(a))[0];
+    $("goalsSummary").textContent = open ? open.name + " · " + goalPct(open) + "%" : "All goals reached!";
+  }
+  function renderGoals() {
+    if (!$("goalsDialog").open) return;
+    const gs = state.goals;
+    $("goalsList").innerHTML = gs.length ? gs.map((g) => {
+      const saved = goalSaved(g.id), p = goalPct(g), n = goalNote(g);
+      return '<div class="goal"><div class="goal-top"><b>' + esc(g.name) + "</b><span>" + money(saved) + " of " + money(g.target) + "</span></div>" +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + p + "%;background:" + (n.done ? "var(--good)" : "var(--primary)") + '"></div></div>' +
+        '<div class="st' + (n.done ? " done" : "") + '">' + esc(n.text) + "</div>" +
+        '<div class="actions"><button class="small" data-gadd="' + esc(g.id) + '">Add money</button><button class="small ghost" data-gout="' + esc(g.id) + '">Take out</button><button class="small ghost" data-gedit="' + esc(g.id) + '">Edit</button></div></div>';
+    }).join("") : '<div class="empty">Pick something to save for, set a target, then add money toward it as you go.</div>';
+    $("goalAdd").classList.toggle("hidden", gs.length >= MAX_GOALS);
+    $("goalsNote").textContent = gs.length >= MAX_GOALS ? "That's the most you can have (" + MAX_GOALS + " goals). Edit or delete one to make room for another." : "Up to " + MAX_GOALS + " goals. Money you add comes out of Left to spend.";
+  }
+  function openGoals() { $("goalsDialog").showModal(); renderGoals(); }
+  $("goalsOpen").onclick = openGoals;
+  $("goalsClose").onclick = () => $("goalsDialog").close();
+  $("goalAdd").onclick = () => openGoal(null);
+  $("goalsList").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-gadd]"), o = e.target.closest("[data-gout]"), d = e.target.closest("[data-gedit]");
+    if (a) openMoney(a.dataset.gadd, "add"); else if (o) openMoney(o.dataset.gout, "out"); else if (d) openGoal(d.dataset.gedit);
+  });
+  function openGoal(id) {
+    editingGoal = id ? goalById(id) : null;
+    $("goalTitle").textContent = editingGoal ? "Edit goal" : "New savings goal";
+    $("goalName").value = editingGoal ? editingGoal.name : ""; $("goalTarget").value = editingGoal ? editingGoal.target : ""; $("goalBy").value = editingGoal && editingGoal.by ? editingGoal.by : "";
+    $("goalDelete").classList.toggle("hidden", !editingGoal);
+    $("goalDialog").showModal();
+  }
+  $("goalCancel").onclick = () => $("goalDialog").close();
+  $("goalForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("goalName").value.trim(), target = parseFloat($("goalTarget").value), by = $("goalBy").value;
+    if (!name || !(target > 0)) return;
+    const rec = { name, target: Math.round(target * 100) / 100, by: by || undefined };
+    if (editingGoal) Object.assign(editingGoal, rec); else if (state.goals.length < MAX_GOALS) state.goals.push({ id: uid(), ...rec });
+    $("goalDialog").close(); commit(); renderGoals(); toast("Goal saved");
+  });
+  $("goalDelete").onclick = () => {  // deleting a goal returns its money to Left to spend, as a dated entry, so past months keep their history
+    if (!editingGoal) return;
+    const saved = goalSaved(editingGoal.id);
+    if (!confirm('Delete "' + editingGoal.name + '"?' + (saved > 0 ? " Its " + money(saved) + " goes back into Left to spend." : ""))) return;
+    if (saved !== 0) state.transactions.push({ id: uid(), type: "saving", amount: -saved, date: dstr(new Date()), category: "", note: "Goal closed", goal: editingGoal.id });
+    state.goals = state.goals.filter((g) => g.id !== editingGoal.id);
+    $("goalDialog").close(); commit(); renderGoals(); toast("Goal deleted");
+  };
+  function openMoney(id, mode) {
+    moneyGoal = goalById(id); moneyMode = mode;
+    $("goalMoneyTitle").textContent = (mode === "add" ? "Add to " : "Take out of ") + moneyGoal.name;
+    $("goalMoneyHint").textContent = mode === "add" ? "Comes out of Left to spend this month." : "There is " + money(goalSaved(id)) + " in this goal. What you take out goes back into Left to spend.";
+    $("goalMoneyAmt").value = ""; $("goalMoneyDialog").showModal();
+  }
+  $("goalMoneyCancel").onclick = () => $("goalMoneyDialog").close();
+  $("goalMoneyForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const amt = Math.round(parseFloat($("goalMoneyAmt").value) * 100) / 100;
+    if (!(amt > 0) || !moneyGoal) return;
+    if (moneyMode === "out" && amt > goalSaved(moneyGoal.id) + .001) { alert("There is only " + money(goalSaved(moneyGoal.id)) + " in this goal."); return; }
+    state.transactions.push({ id: uid(), type: "saving", amount: moneyMode === "out" ? -amt : amt, date: dstr(new Date()), category: "", note: "", goal: moneyGoal.id });
+    viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    $("goalMoneyDialog").close(); commit(); renderGoals(); toast(moneyMode === "out" ? "Taken out of the goal" : "Added to the goal");
+  });
+
   /* ---------- Box transparency button: each tap makes the boxes 25% more see-through, then back to solid after 100% ---------- */
   const GLASS = ["0", "25", "50", "75", "100"];
   function showGlass() {
@@ -1094,7 +1253,7 @@
         const data = JSON.parse(reader.result);
         if (!validState(data)) throw new Error("bad");
         if (!confirm("Replace all current data with this backup?")) return;
-        state = data; ensureIncome(); ensureRecurring(); commit(); toast("Backup restored");
+        state = data; ensureIncome(); ensureRecurring(); ensureGoals(); commit(); toast("Backup restored");
       } catch (err) { alert("That file isn't a valid backup."); }
     };
     reader.readAsText(file);
