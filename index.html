@@ -365,7 +365,10 @@
   nav button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; box-sizing: content-box; padding: 3px 16px; border-radius: 14px; transition: background .2s ease; }
   nav button.on { color: var(--primary); font-weight: 700; }
   nav button.on svg { background: var(--track); stroke-width: 2.1; }
-  .fab { position: fixed; right: max(16px, calc(50% - 284px)); bottom: calc(72px + var(--safe-b)); width: 56px; height: 56px; padding: 0; border-radius: 18px; box-shadow: 0 10px 24px rgba(194,65,122,.45); display: grid; place-items: center; }
+  .fabs { position: fixed; right: max(16px, calc(50% - 284px)); bottom: calc(72px + var(--safe-b)); display: flex; gap: 12px; }
+  .fab { width: 56px; height: 56px; padding: 0; border-radius: 18px; box-shadow: 0 10px 24px rgba(0,0,0,.3); display: grid; place-items: center; color: var(--solid); }
+  .fab.inc { background: var(--good); }
+  .fab.exp { background: var(--bad); }
   .fab svg { width: 26px; height: 26px; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; fill: none; }
 
   dialog { border: 2.6px solid var(--outline); border-radius: 20px; padding: 20px; width: min(94vw, 420px); background: var(--solid); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
@@ -488,7 +491,10 @@
   </section>
 </main>
 
-<button class="fab" id="fab" aria-label="Add transaction"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+<div class="fabs" id="fabs">
+  <button class="fab exp" id="fabExpense" aria-label="Add expense"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+  <button class="fab inc" id="fabIncome" aria-label="Add income"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
 
 <nav><div class="in" id="tabs">
   <button data-tab="overview" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Overview</button>
@@ -674,7 +680,7 @@
     document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
     // Settings is a page, not a tab: the month picker and the + button don't apply there
     document.querySelector(".month-nav").classList.toggle("hidden", tab === "settings");
-    $("fab").classList.toggle("hidden", tab === "settings");
+    $("fabs").classList.toggle("hidden", tab === "settings");
     renderCatOptions();
     if (tab === "settings") renderSettings();
     if (tab === "overview") renderOverview();
@@ -941,7 +947,7 @@
     $("btnIncome").classList.toggle("on", type === "income");
     renderCatOptions();
   }
-  function openTx(id) {
+  function openTx(id, newType) {
     const tapped = id ? state.transactions.find((t) => t.id === id) : null;
     if (tapped && tapped.type === "saving") {  // savings entries aren't edited like other transactions: they can only be removed (or managed from the goal)
       if (tapped.amount > 0 && goalById(tapped.goal) && goalSaved(tapped.goal) - tapped.amount < -.001) {  // a goal can't go below $0
@@ -960,14 +966,15 @@
       $("txAmount").value = editingTx.amount; $("txDate").value = editingTx.date; $("txNote").value = editingTx.note || "";
       if ([].concat(state.categories, state.incomeCategories).some((c) => c.id === editingTx.category)) $("txCategory").value = editingTx.category;
     } else {
-      setType("expense");
+      setType(newType || "expense");
       $("txAmount").value = ""; $("txNote").value = "";
       const now = new Date();
       $("txDate").value = mKey(now) === mKey(viewMonth) ? dstr(now) : dstr(viewMonth);
     }
     $("txDialog").showModal();
   }
-  $("fab").onclick = () => openTx(null);
+  $("fabExpense").onclick = () => openTx(null, "expense");
+  $("fabIncome").onclick = () => openTx(null, "income");
   $("btnExpense").onclick = () => setType("expense");
   $("btnIncome").onclick = () => setType("income");
   $("txCancel").onclick = () => $("txDialog").close();
