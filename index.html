@@ -684,13 +684,30 @@
   const goalSaved = (id) => state.transactions.filter((t) => t.type === "saving" && t.goal === id).reduce((s, t) => s + t.amount, 0);
 
   function load() {
-    try { const p = JSON.parse(localStorage.getItem(KEY)); if (validState(p)) state = p; } catch (e) { /* use defaults */ }
+    let raw = null, restored = false;
+    try { raw = localStorage.getItem(KEY); } catch (e) { /* storage blocked */ }
+    try { const p = JSON.parse(raw); if (!validState(p)) throw new Error("no data"); state = p; }
+    catch (e) {
+      // Never let a failed read end up as blank defaults saved over the real data: keep the unreadable text aside, and fall back to the
+      // daily copy (the last good version from before today's first save) if there is one.
+      if (raw) { try { localStorage.setItem(KEY + "-unreadable", raw); } catch (e2) { /* nothing more to do */ } }
+      try { const pv = JSON.parse(localStorage.getItem(KEY + "-prev")), p = JSON.parse(pv.data); if (validState(p)) { state = p; restored = true; } } catch (e2) { /* use defaults */ }
+    }
     ensureRecurring(); ensureGoals(); ensurePaychecks();
+    if (restored) { save(); toast("Restored your data from the saved copy"); }
   }
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    try {
+      // once a day, keep the version from before today's first save as a fallback copy
+      const old = localStorage.getItem(KEY), day = dstr(new Date());
+      let pv = null; try { pv = JSON.parse(localStorage.getItem(KEY + "-prev")); } catch (e) { /* no copy yet */ }
+      if (old && (!pv || pv.day !== day)) localStorage.setItem(KEY + "-prev", JSON.stringify({ day, data: old }));
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
     catch (e) { alert("Could not save on this device. Storage may be full or blocked."); }
   }
+  // ask the phone not to clear this app's saved data when it is short on space
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* not supported */ }
   function commit() { save(); render(); }
   function toast(m) {
     const t = $("toast"); t.textContent = m; t.classList.add("show");
@@ -1067,7 +1084,7 @@
   $("addCategory").onclick = () => openCat(null);
   $("catCancel").onclick = () => $("catDialog").close();
   $("catDelete").onclick = () => {
-    if (!editingCat || !confirm('Delete "' + editingCat.name + '"? Its transactions will stay but show as "Deleted category".')) return;
+    if (!editingCat) return;  // no "are you sure": its transactions stay and show as "Deleted category"
     state.categories = state.categories.filter((c) => c.id !== editingCat.id);
     $("catDialog").close(); commit();
   };
@@ -2032,7 +2049,7 @@
   /* ---------- Auto-update ---------- */
   // The server's copy is read fresh (never from the phone's saved copy). If its BUILD stamp differs from this one, reload onto it.
   // Data is saved on every change, so a reload loses nothing. It waits while a form is open, and tries each new build once per session.
-  const BUILD = "2026-11-01.1632";
+  const BUILD = "2026-11-01.1641";
   async function checkUpdate() {
     if (!navigator.onLine || document.hidden) return;
     try {
