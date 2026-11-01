@@ -338,6 +338,9 @@
   .theme-opt[aria-pressed="true"] .ck svg { opacity: 1; }
   .pill { display: inline-block; margin-top: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
   .pill.paid { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .pill.late { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+  button.pill { border: 0; font-family: inherit; min-height: 32px; padding: 0 12px; margin-top: 2px; cursor: pointer; }
+  button.pill.go { color: var(--primary-ink); background: var(--primary); }
   /* recurring bills: one slim row until tapped open */
   #goalsCard { padding: 6px 18px; }
   .goal { padding: 14px 0; border-bottom: 1px solid var(--line); }
@@ -459,7 +462,7 @@
     <div class="card"><h2>Monthly budget</h2><div id="budgetTotal"></div></div>
     <div class="card" id="billCard"><h2 style="display:flex;justify-content:space-between"><span>Recurring bills</span><span id="billsTotal"></span></h2><div id="bills"></div>
       <div class="actions"><button class="small" id="addBill">Add bill</button></div>
-      <p class="muted" style="font-size:12px;margin:10px 0 0">Added to Activity as an expense on its day. Tap one to edit it.</p></div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">Tap Mark paid when you pay a bill to add it to Activity. Tap a bill to edit it.</p></div>
     <div class="card" id="payCard"><h2>Recurring paychecks</h2><div id="paychecks"></div>
       <div class="actions"><button class="small" id="addPay">Add paycheck</button></div>
       <p class="muted" style="font-size:12px;margin:10px 0 0">Added to Income on each pay day. Tap one to edit it.</p></div>
@@ -578,7 +581,7 @@
       <div class="field"><label for="billDay">Day of month</label><input id="billDay" type="number" inputmode="numeric" step="1" min="1" max="31" required></div>
     </div>
     <div class="field"><label for="billCategory">Category</label><select id="billCategory"></select></div>
-    <p class="muted" style="font-size:12px;margin:0 0 4px">Added as an expense on that day each month. Short months use their last day.</p>
+    <p class="muted" style="font-size:12px;margin:0 0 4px">Shows as due on that day each month. Tap Mark paid when you pay it and it's added as an expense. Short months use their last day.</p>
     <div class="actions">
       <button type="submit" style="flex:1">Save</button>
       <button type="button" class="danger hidden" id="billDelete">Delete</button>
@@ -665,7 +668,7 @@
   const prevOf = (d) => new Date(d.getFullYear(), d.getMonth() - 1, 1);
   const pct = (n) => (n >= 0 ? "+" : "") + Math.round(n) + "%";
 
-  // Recurring bills: { id, name, amount, day: 1-31, category, since: "YYYY-MM" (first month to charge), paid: ["YYYY-MM", ...] }.
+  // Recurring bills: { id, name, amount, day: 1-31, category, since: "YYYY-MM" (first month it can be marked paid), paid: ["YYYY-MM", ...] }.
   // Older saved data has no `recurring` list at all.
   const ensureRecurring = () => {
     if (!Array.isArray(state.recurring)) state.recurring = [];
@@ -792,7 +795,9 @@
     $("bills").innerHTML = !list.length ? '<div class="empty">Add rent, subscriptions or anything that comes out each month.</div>' : list.map((b) => {
       const due = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), Math.min(b.day, daysIn(viewMonth)));
       const c = catById(b.category), i = cIdx(b.category);
-      const pill = b.paid.includes(k) ? '<span class="pill paid">Paid</span>'
+      const nowD = new Date(), canPay = k >= b.since && k <= mKey(nowD), late = canPay && due < new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate());
+      const pill = b.paid.includes(k) ? '<button type="button" class="pill paid" data-unpay="' + esc(b.id) + '" aria-label="Paid. Tap to mark unpaid">Paid &#10003;</button>'
+        : canPay ? '<button type="button" class="pill go" data-markpaid="' + esc(b.id) + '" aria-label="Mark ' + esc(b.name) + ' paid">' + (late ? "Overdue &middot; " : "") + "Mark paid</button>"
         : k >= b.since ? '<span class="pill">Due ' + due.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</span>"
         : '<span class="pill">Starts ' + new Date(+b.since.slice(0, 4), +b.since.slice(5, 7) - 1, 1).toLocaleDateString(undefined, { month: "short" }) + "</span>";
       return '<div class="tx" data-bill="' + esc(b.id) + '" tabindex="0" role="button"><div class="avatar" style="background:' + tint(i) + ";color:" + cVar(i) + '">' + esc(initial(b.name)) + "</div>" +
@@ -801,21 +806,25 @@
     }).join("");
   }
 
-  // Adds an expense for every bill whose due date has arrived and that hasn't been charged for that month yet.
-  // Runs when the app opens or comes back to the front, so a bill is caught up even if the app was closed on its due day.
-  function applyRecurring() {
-    const now = new Date(), nowK = mKey(now);
-    let added = 0;
-    state.recurring.forEach((b) => {
-      let d = new Date(+b.since.slice(0, 4), +b.since.slice(5, 7) - 1, 1);
-      for (let n = 0; n < 36 && mKey(d) <= nowK; n++, d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-        const k = mKey(d), due = new Date(d.getFullYear(), d.getMonth(), Math.min(b.day, daysIn(d)));
-        if (b.paid.includes(k) || due > now) continue;
-        state.transactions.push({ id: uid(), type: "expense", amount: b.amount, date: dstr(due), category: b.category, note: b.name, bill: b.id });
-        b.paid.push(k); added++;
-      }
-    });
-    return added + applyPaychecks();
+  // Bills are NOT charged by themselves: the owner taps "Mark paid" on the Budgets page (markBill), which adds the expense.
+  // Paychecks still arrive on their own, so this only runs applyPaychecks (on open, on return and on save).
+  function applyRecurring() { return applyPaychecks(); }
+  // Marks one month of a bill paid (adds the expense, dated today for this month or the due date for an earlier one) or takes it back.
+  function markBill(id, k, paid) {
+    const b = state.recurring.find((x) => x.id === id);
+    if (!b) return;
+    if (paid) {
+      if (b.paid.includes(k)) return;
+      const now = new Date(), y = +k.slice(0, 4), m = +k.slice(5, 7) - 1;
+      const date = k === mKey(now) ? dstr(now) : dstr(new Date(y, m, Math.min(b.day, daysIn(new Date(y, m, 1)))));
+      state.transactions.push({ id: uid(), type: "expense", amount: b.amount, date, category: b.category, note: b.name, bill: b.id, billMonth: k });
+      b.paid.push(k);
+    } else {
+      b.paid = b.paid.filter((x) => x !== k);
+      const i = state.transactions.findIndex((t) => t.bill === id && (t.billMonth || t.date.slice(0, 7)) === k);
+      if (i >= 0) state.transactions.splice(i, 1);
+    }
+    commit(); toast(paid ? b.name + " marked paid" : b.name + " marked unpaid");
   }
   // The pay day for the n-th paycheck counting from `start` (n = 0 is the start itself).
   function payDate(p, n) {
@@ -848,11 +857,8 @@
       '<div class="mid"><div class="t">' + esc(p.name) + '</div><div class="s">' + PAY_EVERY[p.every] + " &middot; next " + nextPay(p).toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</div></div>" +
       '<div class="amt good">+' + money(p.amount) + "</div></div>").join("");
   }
-  // a new bill starts at its next due date (today counts), so adding it mid-month never double-charges a bill already logged by hand
-  function firstMonth(day) {
-    const now = new Date();
-    return mKey(Math.min(day, daysIn(now)) >= now.getDate() ? now : new Date(now.getFullYear(), now.getMonth() + 1, 1));
-  }
+  // a new bill starts this month, so it can be marked paid right away (nothing is charged until the owner taps Mark paid)
+  const firstMonth = () => mKey(new Date());
 
   function renderDonut(txs) {
     const by = {};
@@ -1125,8 +1131,7 @@
     if (editingBill) { Object.assign(editingBill, rec); if (!editingBill.paid.length) editingBill.since = firstMonth(day); }
     else state.recurring.push({ id: uid(), ...rec, since: firstMonth(day), paid: [] });
     $("billDialog").close();
-    const added = applyRecurring();
-    commit(); toast(added ? "Bill saved and added to Activity" : "Bill saved");
+    commit(); toast("Bill saved");
   });
 
   /* ---------- Recurring paycheck dialog ---------- */
@@ -1330,7 +1335,11 @@
   $("nextMonth").onclick = () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1); render(); };
   ["recent", "txList"].forEach((id) => $(id).addEventListener("click", (e) => { const r = e.target.closest("[data-edit]"); if (r) openTx(r.dataset.edit); }));
   $("categories").addEventListener("click", (e) => { const r = e.target.closest("[data-cat]"); if (r) openCat(r.dataset.cat); });
-  $("bills").addEventListener("click", (e) => { const r = e.target.closest("[data-bill]"); if (r) openBill(r.dataset.bill); });
+  $("bills").addEventListener("click", (e) => {
+    const p = e.target.closest("[data-markpaid],[data-unpay]");
+    if (p) { markBill(p.dataset.markpaid || p.dataset.unpay, mKey(viewMonth), !!p.dataset.markpaid); return; }
+    const r = e.target.closest("[data-bill]"); if (r) openBill(r.dataset.bill);
+  });
   $("paychecks").addEventListener("click", (e) => { const r = e.target.closest("[data-pay]"); if (r) openPay(r.dataset.pay); });
   // rows act as buttons: Enter or Space opens them from the keyboard
   document.addEventListener("keydown", (e) => {
@@ -2049,7 +2058,7 @@
   /* ---------- Auto-update ---------- */
   // The server's copy is read fresh (never from the phone's saved copy). If its BUILD stamp differs from this one, reload onto it.
   // Data is saved on every change, so a reload loses nothing. It waits while a form is open, and tries each new build once per session.
-  const BUILD = "2026-11-01.1641";
+  const BUILD = "2026-11-01.1845";
   async function checkUpdate() {
     if (!navigator.onLine || document.hidden) return;
     try {
