@@ -9,12 +9,20 @@
 <meta name="theme-color" content="#ebdffa">
 <script>
 // Pick the theme before the page paints, so there is no flash: the saved choice, else the device setting.
+// Two separate choices: light or dark (data-theme), and the look (data-skin: sakura, maple or plain; chosen in Settings).
 (function () {
-  var t = null;
-  try { t = localStorage.getItem("budget-theme"); } catch (e) {}
+  var t = null, s = null, g = null;
+  try { t = localStorage.getItem("budget-theme"); s = localStorage.getItem("budget-skin"); g = localStorage.getItem("budget-glass"); } catch (e) {}
+  // how see-through the boxes are, in steps: 0, 25, 50, 75 or 100 percent (set by the button in the top bar)
+  if (["0", "25", "50", "75", "100"].indexOf(g) < 0) g = "75";
+  document.documentElement.setAttribute("data-glass", g);
   if (t !== "dark" && t !== "light") t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  // browser-bar colour for each look: [light, dark]
+  var bars = window.SKIN_BARS = { sakura: ["#ebdffa", "#1a1030"], maple: ["#fde6c8", "#1f0f0a"], city: ["#aebdf0", "#04071a"], ocean: ["#5b5bb0", "#0c0b2e"], plain: ["#f4f4f6", "#0f1115"] };
+  if (!bars[s]) s = "sakura";
   document.documentElement.setAttribute("data-theme", t);
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", t === "dark" ? "#1a1030" : "#ebdffa");
+  document.documentElement.setAttribute("data-skin", s);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", bars[s][t === "dark" ? 1 : 0]);
 })();
 </script>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -49,6 +57,84 @@
       --bark: #1d101c; --bark-hi: #6a4262; --hill1: rgba(120,50,100,.5); --hill2: rgba(90,35,85,.55);
       --mtn1: #3d2760; --mtn2: #4a3b7c; --mtn-shade: #1d1040; --snow: #e4d6f7; --mist: #5a2a68;
   }
+  /* Looks (data-skin on <html>, picked in Settings). Cherry blossom is the default set above; each look below defines every colour
+     for light, then again for dark. Dark needs the extra attribute so it beats both the light set and the cherry-blossom dark set. */
+  :root[data-skin="maple"] {
+    --bg: #fbf1e4; --card: rgba(255,255,255,.5); --solid: #fff9f1; --field: rgba(255,255,255,.7);
+    --ink: #3a2112; --muted: #85604a; --line: rgba(176,84,30,.2); --glass-edge: rgba(255,255,255,.7);
+    --primary: #c4531a; --primary-ink: #fff; --good: #0b7a54; --bad: #c62839; --warn: #9a5200;
+    --track: rgba(176,84,30,.13); --hero1: #8a3a12; --hero2: #d9742c; --shadow: 0 10px 30px rgba(176,84,30,.15);
+    --c0: #c4531a; --c1: #4f7fb8; --c2: #2f8f6b; --c3: #d9a21b; --c4: #b0344a; --c5: #6a5acd; --c6: #7a9a2f; --c7: #8d7a6a;
+    --sky1: #fde6c8; --sky2: #f9cf9f; --sky3: #f4b98a; --orb: #fff3d6; --orb-glow: rgba(255,214,150,.75);
+    --bark: #4a2a1a; --bark-hi: #9a6a4a; --hill1: rgba(214,140,80,.5); --hill2: rgba(186,108,58,.5);
+    --mtn1: #e3c8a8; --mtn2: #c9a27c; --mtn-shade: #7a5238; --snow: #fff6ea; --mist: #f6dcc0;
+  }
+  :root[data-skin="maple"][data-theme="dark"] {
+    --bg: #1a0f0a; --card: rgba(48,28,18,.46); --solid: #2f1c12; --field: rgba(255,255,255,.07);
+    --ink: #fdeee0; --muted: #d3ab90; --line: rgba(255,170,110,.2); --glass-edge: rgba(255,200,150,.18);
+    --primary: #ff9a5c; --primary-ink: #2a1206; --good: #4fd6a3; --bad: #ff8a8a; --warn: #ffc861;
+    --track: rgba(255,150,90,.16); --hero1: #5a2308; --hero2: #b3511a; --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --c0: #ff9a5c; --c1: #7db6ff; --c2: #5fd3a8; --c3: #ffd061; --c4: #ff7d8e; --c5: #a89cff; --c6: #b9dd6a; --c7: #d1b7a3;
+    --sky1: #1f0f0a; --sky2: #3a1a10; --sky3: #5a2a14; --orb: #ffe9cc; --orb-glow: rgba(255,200,150,.35);
+    --bark: #1a0d08; --bark-hi: #6a4430; --hill1: rgba(130,60,25,.5); --hill2: rgba(100,45,20,.55);
+    --mtn1: #4a2c20; --mtn2: #6a4030; --mtn-shade: #24120b; --snow: #f0d9c4; --mist: #6a3318;
+  }
+  /* City: dark is the full night sky; light is the same skyline at twilight (blue to peach, stars faint, no shooting stars) */
+  :root[data-skin="city"] {
+    --bg: #e8ecf8; --card: rgba(255,255,255,.55); --solid: #f6f8ff; --field: rgba(255,255,255,.7);
+    --ink: #17203a; --muted: #55608a; --line: rgba(60,80,160,.2); --glass-edge: rgba(255,255,255,.7);
+    --primary: #3b5bdb; --primary-ink: #fff; --good: #0b7a54; --bad: #c62839; --warn: #9a5200;
+    --track: rgba(60,80,180,.13); --hero1: #263a8f; --hero2: #5b7cf0; --shadow: 0 10px 30px rgba(40,60,160,.16);
+    --c0: #3b5bdb; --c1: #d6409f; --c2: #1f9e8f; --c3: #e0951f; --c4: #e0603f; --c5: #4f8fd8; --c6: #7aa83a; --c7: #8a8fa8;
+    --sky1: #aebdf0; --sky2: #d6c8f0; --sky3: #f8d7c8; --orb: #fffbea; --orb-glow: rgba(255,244,200,.6);
+    --bld1: #9aa6d6; --bld2: #5a679e; --win: #ffe9a8; --star-o: .55;
+  }
+  :root[data-skin="city"][data-theme="dark"] {
+    --bg: #070b1a; --card: rgba(18,26,56,.5); --solid: #121a38; --field: rgba(255,255,255,.07);
+    --ink: #eaf0ff; --muted: #9fb0e0; --line: rgba(140,170,255,.2); --glass-edge: rgba(160,190,255,.16);
+    --primary: #7ea2ff; --primary-ink: #0a1030; --good: #4fd6a3; --bad: #ff8a8a; --warn: #ffc861;
+    --track: rgba(120,160,255,.16); --hero1: #1b2a6b; --hero2: #3d5fd0; --shadow: 0 10px 30px rgba(0,0,0,.4);
+    --c0: #7ea2ff; --c1: #ff7ac8; --c2: #5fd3c2; --c3: #ffc861; --c4: #ff9d80; --c5: #8fd0ff; --c6: #b6dd7a; --c7: #a3adcf;
+    --sky1: #04071a; --sky2: #0b1535; --sky3: #1b2a5a; --orb: #f4f1e4; --orb-glow: rgba(220,230,255,.3);
+    --bld1: #16204a; --bld2: #080d26; --win: #ffd36e; --star-o: 1;
+  }
+  /* Ocean: light is the sun setting over gold and violet water; dark is the afterglow just after, with the first stars out */
+  :root[data-skin="ocean"] {
+    --bg: #f7e7dc; --card: rgba(255,255,255,.52); --solid: #fff9f4; --field: rgba(255,255,255,.72);
+    --ink: #12303c; --muted: #4f6b78; --line: rgba(14,116,144,.22); --glass-edge: rgba(255,255,255,.7);
+    --primary: #0e7490; --primary-ink: #fff; --good: #0b7a54; --bad: #c62839; --warn: #9a5200;
+    --track: rgba(14,116,144,.13); --hero1: #0b4f6c; --hero2: #1596a8; --shadow: 0 10px 30px rgba(14,90,120,.16);
+    --c0: #0e7490; --c1: #e0603f; --c2: #2f8f6b; --c3: #e0951f; --c4: #c44569; --c5: #4f7fd8; --c6: #7aa83a; --c7: #7a8a96;
+    --sky1: #5b5bb0; --sky2: #e8788a; --sky3: #ffc27a; --sun: #fff2c9; --sun-glow: rgba(255,200,120,.85);
+    --sea1: #ffb27a; --sea2: #1a7a9a; --sea3: #0a4468;
+    --foam: #fff2d8; --glint: #fff2c9; --cloud: #ffd9c0; --cloud2: #f6a6a0; --cloud3: #fff4e4; --gull: #4a3345; --boat: #3a2a3f; --sail: #fff0dc; --island: #a07098; --sun-edge: #ffd27a; --star-o: 0;
+  }
+  :root[data-skin="ocean"][data-theme="dark"] {
+    --bg: #07121c; --card: rgba(10,32,48,.5); --solid: #0f2636; --field: rgba(255,255,255,.07);
+    --ink: #e8f6fb; --muted: #9cc2d0; --line: rgba(120,200,230,.2); --glass-edge: rgba(150,210,240,.16);
+    --primary: #4fc3d9; --primary-ink: #04202a; --good: #4fd6a3; --bad: #ff8a8a; --warn: #ffc861;
+    --track: rgba(80,190,220,.16); --hero1: #0b3a52; --hero2: #1b8aa3; --shadow: 0 10px 30px rgba(0,0,0,.4);
+    --c0: #4fc3d9; --c1: #ff9d80; --c2: #5fd3a8; --c3: #ffc861; --c4: #ff7d9e; --c5: #8fb0ff; --c6: #b6dd7a; --c7: #9fb3bd;
+    --sky1: #0c0b2e; --sky2: #3d1d5c; --sky3: #b8506a; --sun: #ff9a5c; --sun-glow: rgba(255,120,90,.55);
+    --sea1: #7a2f5e; --sea2: #12304f; --sea3: #081a33;
+    --foam: #9fd0e8; --glint: #ffb27a; --cloud: #8a4070; --cloud2: #b24a68; --cloud3: #e08aa0; --gull: #f0cfd8; --boat: #0b0716; --sail: #d9a6b4; --island: #2a1a45; --sun-edge: #e8553a; --star-o: .85;
+  }
+  :root[data-skin="plain"] {
+    --bg: #f4f4f6; --card: rgba(255,255,255,.88); --solid: #ffffff; --field: #ffffff;
+    --ink: #1c1c22; --muted: #6b6b78; --line: rgba(0,0,0,.12); --glass-edge: rgba(255,255,255,.9);
+    --primary: #2f6fed; --primary-ink: #fff; --good: #0b7a54; --bad: #c62839; --warn: #9a5200;
+    --track: rgba(47,111,237,.12); --hero1: #1f4fb8; --hero2: #3b82f6; --shadow: 0 6px 18px rgba(0,0,0,.08);
+    --c0: #2f6fed; --c1: #7c4dff; --c2: #1f9e8f; --c3: #e0951f; --c4: #e0603f; --c5: #4f8fd8; --c6: #7aa83a; --c7: #8a8a96;
+    --sky1: #f4f4f6; --sky2: #f4f4f6; --sky3: #f4f4f6;
+  }
+  :root[data-skin="plain"][data-theme="dark"] {
+    --bg: #0f1115; --card: rgba(30,33,40,.92); --solid: #1b1e25; --field: rgba(255,255,255,.06);
+    --ink: #eef0f5; --muted: #a3a8b5; --line: rgba(255,255,255,.14); --glass-edge: rgba(255,255,255,.08);
+    --primary: #6ea0ff; --primary-ink: #0b1220; --good: #4fd6a3; --bad: #ff8a8a; --warn: #ffc861;
+    --track: rgba(110,160,255,.16); --hero1: #17306b; --hero2: #2f5fd0; --shadow: 0 6px 18px rgba(0,0,0,.4);
+    --c0: #6ea0ff; --c1: #a58bff; --c2: #5fd3c2; --c3: #ffc861; --c4: #ff9d80; --c5: #7db6ff; --c6: #b6dd7a; --c7: #a3a8b5;
+    --sky1: #0f1115; --sky2: #0f1115; --sky3: #0f1115;
+  }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; background: var(--bg); -webkit-tap-highlight-color: transparent; }
   body {
@@ -59,10 +145,24 @@
   }
   main { max-width: 600px; margin: 0 auto; padding: 14px 16px calc(96px + var(--safe-b)); }
   h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; font-weight: 700; }
+  /* How see-through the boxes are is the button in the top bar (data-glass on <html>: 0, 25, 50, 75, 100 percent see-through). Each step sets:
+     --box-pct   how much of the theme's card colour is left in the fill     --blur / --sat   the frosted-glass effect behind the box
+     --hero-a1/2 the same for the Left to spend hero gradient                --halo-a/b, --hero-sh   a soft halo behind the letters so they stay
+     readable as the boxes clear (the letters themselves never change). 75 is the default; a heavy blur hides the scenery more than the fill does. */
+  :root { --box-pct: 28%; --blur: 1.5px; --sat: 1; --hero-a1: 34%; --hero-a2: 32%; --halo-a: 85%; --halo-b: 70%; --hero-sh: .5; }
+  :root[data-glass="0"] { --box-pct: 100%; --blur: 7px; --sat: 1.2; --hero-a1: 76%; --hero-a2: 73%; --halo-a: 0%; --halo-b: 0%; --hero-sh: 0; }
+  :root[data-glass="25"] { --box-pct: 75%; --blur: 5px; --sat: 1.15; --hero-a1: 60%; --hero-a2: 57%; --halo-a: 30%; --halo-b: 20%; --hero-sh: .2; }
+  :root[data-glass="50"] { --box-pct: 50%; --blur: 3px; --sat: 1.08; --hero-a1: 48%; --hero-a2: 46%; --halo-a: 55%; --halo-b: 45%; --hero-sh: .35; }
+  :root[data-glass="100"] { --box-pct: 0%; --blur: 0px; --sat: 1; --hero-a1: 12%; --hero-a2: 11%; --halo-a: 100%; --halo-b: 90%; --hero-sh: .6; }
   .card, .kpi, .month-nav {
-    background: var(--card); border: 2.6px solid var(--outline); box-shadow: var(--shadow), inset 0 1px 0 var(--glass-edge);
-    -webkit-backdrop-filter: blur(7px) saturate(1.2); backdrop-filter: blur(7px) saturate(1.2);
+    background: color-mix(in srgb, var(--card) var(--box-pct), transparent);
+    border: 2.6px solid var(--outline); box-shadow: var(--shadow), inset 0 1px 0 var(--glass-edge);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)); backdrop-filter: blur(var(--blur)) saturate(var(--sat));
   }
+  :root:not([data-skin="plain"]) .card, :root:not([data-skin="plain"]) .kpi, :root:not([data-skin="plain"]) .month-nav {
+    text-shadow: 0 0 7px color-mix(in srgb, var(--solid) var(--halo-a), transparent), 0 0 2px color-mix(in srgb, var(--solid) var(--halo-b), transparent);
+  }
+  :root:not([data-skin="plain"]) .hero { text-shadow: 0 1px 7px rgba(0,0,0,var(--hero-sh)); }
   .card { border-radius: 20px; padding: 18px; margin-bottom: 14px; }
 
   /* blossom scene behind everything */
@@ -74,15 +174,38 @@
     #scene svg { -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
   }
   .petal { position: absolute; top: -28px; width: var(--s); height: calc(var(--s) * 1.2); background: var(--img) center / contain no-repeat; opacity: .9;
-    animation: fall var(--d) linear var(--delay) infinite; will-change: transform; }
-  @keyframes fall {  /* drifts down and flutters: it turns over in 3D as it falls */
-    0% { transform: translate3d(0, -30px, 0) rotate(0deg) rotateX(0deg); opacity: 0; }
+    animation: fall var(--d) linear var(--delay) infinite; }
+  @keyframes fall {  /* drifts down, swaying and spinning (no 3D flip: it stalled on iPhone Safari) */
+    0% { transform: translate3d(0, -30px, 0) rotate(0deg); opacity: 0; }
     8% { opacity: .9; }
-    33% { transform: translate3d(calc(var(--sway) * .6), 36vh, 0) rotate(110deg) rotateX(150deg); }
-    66% { transform: translate3d(calc(var(--sway) * -.4), 74vh, 0) rotate(250deg) rotateX(340deg); }
-    100% { transform: translate3d(calc(var(--sway) * .5), 112vh, 0) rotate(400deg) rotateX(520deg); opacity: .5; }
+    33% { transform: translate3d(calc(var(--sway) * .6), 36vh, 0) rotate(110deg); }
+    66% { transform: translate3d(calc(var(--sway) * -.4), 74vh, 0) rotate(250deg); }
+    100% { transform: translate3d(calc(var(--sway) * .5), 112vh, 0) rotate(400deg); opacity: .5; }
   }
   @media (prefers-reduced-motion: reduce) { .petal { display: none; } }
+  /* city backdrop: a few twinkling stars, one blinking tower light, and the odd shooting star (a thin streak that crosses the sky in
+     well under a second out of every 15 to 30) */
+  .tw { animation: tw 3.4s ease-in-out infinite; }
+  @keyframes tw { 0%, 100% { opacity: var(--o, 1); } 50% { opacity: .12; } }
+  .blink { animation: blink 2.6s steps(1) infinite; }
+  @keyframes blink { 0% { opacity: 1; } 50% { opacity: .1; } }
+  .shoot { position: absolute; width: 90px; height: 2px; border-radius: 2px; opacity: 0; background: linear-gradient(90deg, #fff, rgba(255,255,255,0)); box-shadow: 0 0 6px rgba(255,255,255,.8);
+    animation: shoot var(--d) linear var(--delay) infinite; }
+  @keyframes shoot {
+    0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-25deg); }
+    1% { opacity: 1; }
+    5% { opacity: 1; }
+    7%, 100% { opacity: 0; transform: translate3d(-300px, 140px, 0) rotate(-25deg); }
+  }
+  :root[data-skin="city"]:not([data-theme="dark"]) .shoot { display: none; }
+  @media (prefers-reduced-motion: reduce) { .shoot { display: none; } .tw, .blink { animation: none; } }
+  /* ocean backdrop (kept calm): two sparkle layers on the sun's reflection fade in and out against each other, and two gulls glide
+     across. The sea, sky and clouds themselves are a still painted picture. */
+  .shim { animation: shim 9s ease-in-out infinite; }
+  @keyframes shim { 0%, 100% { opacity: 1; } 50% { opacity: .1; } }
+  .gl { animation: glide var(--gd) linear var(--gdelay) infinite; }
+  @keyframes glide { to { transform: translateX(520px); } }
+  @media (prefers-reduced-motion: reduce) { .shim { animation: none; } .gl { animation: none; transform: translateX(var(--gs, 200px)); } }
   .hidden { display: none !important; }
   button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 10px 16px; background: var(--primary); color: var(--primary-ink); cursor: pointer; min-height: 44px;
     touch-action: manipulation; -webkit-user-select: none; user-select: none; transition: transform .12s ease, opacity .12s ease; }
@@ -102,28 +225,31 @@
   .empty { color: var(--muted); text-align: center; padding: 22px 8px; font-size: 14px; }
 
   /* top bar */
-  .topbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
   .topbar .brand { margin-right: auto; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
   .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--hero2), var(--primary)); display: grid; place-items: center; }
   .logo svg { width: 18px; height: 18px; stroke: #fff; }
+  /* iPhone SE and other narrow phones: a slightly smaller logo and name so all five top-bar items stay on one row */
+  @media (max-width: 389px) { .topbar { gap: 5px; } .brand { font-size: 16px; gap: 7px; } .logo { width: 26px; height: 26px; border-radius: 8px; } .logo svg { width: 16px; height: 16px; } }
   .month-nav { display: flex; align-items: center; border-radius: 14px; }
-  .month-nav button { background: transparent; color: var(--ink); min-height: 40px; min-width: 36px; padding: 0; display: grid; place-items: center; }
+  .month-nav button { background: transparent; color: var(--ink); min-height: 40px; min-width: 26px; padding: 0; display: grid; place-items: center; }
   .month-nav button svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .month-nav span { min-width: 84px; text-align: center; font-weight: 700; font-size: 14px; }
+  .month-nav span { min-width: 60px; text-align: center; font-weight: 700; font-size: 14px; }
 
   /* hero */
-  .hero { background: linear-gradient(140deg, color-mix(in srgb, var(--hero1) 76%, transparent), color-mix(in srgb, var(--hero2) 73%, transparent)); color: #fff; border: 2.6px solid var(--outline); padding: 22px 20px; }
-  .hero .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; font-weight: 700; }
-  .hero .amount { font-size: clamp(32px, 10vw, 44px); font-weight: 800; letter-spacing: -.02em; margin: 4px 0 2px; overflow-wrap: anywhere; }
-  .hero .sub { font-size: 13px; opacity: .85; }
-  .hero .meter { height: 8px; border-radius: 6px; background: rgba(255,255,255,.2); margin: 16px 0 6px; position: relative; overflow: hidden; }
+  .hero { background: linear-gradient(140deg, color-mix(in srgb, var(--hero1) var(--hero-a1), transparent), color-mix(in srgb, var(--hero2) var(--hero-a2), transparent)); color: #fff; border: 2.6px solid var(--outline); padding: 14px 16px; }
+  .hero .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .hero .top > div:first-child { min-width: 0; }
+  .hero .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; font-weight: 700; }
+  .hero .amount { font-size: clamp(26px, 8vw, 32px); font-weight: 800; letter-spacing: -.02em; margin: 1px 0 0; overflow-wrap: anywhere; }
+  .hero .sub { font-size: 12px; opacity: .85; }
+  .hero .meter { height: 6px; border-radius: 6px; background: rgba(255,255,255,.2); margin: 10px 0 5px; position: relative; overflow: hidden; }
   .hero .meter i { position: absolute; inset: 0 auto 0 0; background: #fff; border-radius: 6px; }
   .hero .meter-l { display: flex; justify-content: space-between; font-size: 12px; opacity: .8; }
-  .hero .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
-  .hero .two > div { background: rgba(255,255,255,.12); border-radius: 12px; padding: 10px 12px; }
-  .hero .two .l { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .75; font-weight: 700; }
-  .hero .two .v { font-size: clamp(15px, 4.8vw, 19px); font-weight: 800; overflow-wrap: anywhere; }
+  .hero .two { flex: none; display: flex; flex-direction: column; gap: 6px; text-align: right; }
+  .hero .two .l { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; opacity: .75; font-weight: 700; }
+  .hero .two .v { font-size: clamp(14px, 4.4vw, 17px); font-weight: 800; overflow-wrap: anywhere; }
 
   .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
   .kpi { border-radius: 16px; padding: 12px; }
@@ -132,12 +258,13 @@
   .kpi .d { font-size: 11px; margin-top: 2px; color: var(--muted); }
 
   /* charts */
-  .donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center; }
-  .donut { width: 160px; height: 160px; flex: none; }
+  .donut-wrap { display: flex; align-items: center; gap: 14px; }
+  .donut { width: 88px; height: 88px; flex: none; }
   .donut .cb { font-size: 6.6px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
   .donut .cs { font-size: 3.2px; fill: var(--muted); text-anchor: middle; letter-spacing: .1em; }
-  .legend { flex: 1; min-width: 160px; }
-  .legend div { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; }
+  .legend { flex: 1; min-width: 0; }
+  .legend div { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 2px 0; }
+  .legend .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .legend i, .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; display: inline-block; }
   .legend b { margin-left: auto; font-weight: 700; }
   .chart-svg { width: 100%; height: auto; display: block; }
@@ -175,6 +302,51 @@
   th:first-child, td:first-child { text-align: left; }
   td { text-align: right; padding: 9px 0; border-top: 1px solid var(--line); }
   td:first-child { display: flex; align-items: center; gap: 8px; }
+
+  /* the plain look has no scenery behind the cards, so the frosted blur would only cost speed */
+  :root[data-skin="plain"] .card, :root[data-skin="plain"] .kpi, :root[data-skin="plain"] .month-nav, :root[data-skin="plain"] nav { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  :root[data-skin="plain"] nav { background: var(--solid); }
+  :root[data-skin="plain"] #glassBtn { display: none; }  /* nothing behind the boxes to see through, so no transparency button */
+  /* nothing to see through on a flat background, so the plain look keeps its full-strength boxes */
+  :root[data-skin="plain"] .card, :root[data-skin="plain"] .kpi, :root[data-skin="plain"] .month-nav { background: var(--card); }
+  :root[data-skin="plain"] .hero { background: linear-gradient(140deg, color-mix(in srgb, var(--hero1) 76%, transparent), color-mix(in srgb, var(--hero2) 73%, transparent)); }
+
+  /* settings gear in the top bar, and the Settings page */
+  .gear { flex: none; position: relative; width: 28px; min-height: 36px; height: 36px; padding: 0; border-radius: 10px; background: transparent; color: var(--ink); display: grid; place-items: center; }
+  .gear::before { content: ""; position: absolute; inset: -4px -5px; }  /* a larger tap area than the icon itself */
+  /* the transparency button shows its current setting as a number in a small rounded box */
+  .glass { width: 36px; height: 28px; min-height: 28px; padding: 0; border: 1.5px solid var(--muted); border-radius: 9px; font-size: 12px; font-weight: 800; letter-spacing: -.03em; }
+  .glass::before { inset: -8px -3px; }
+  .gear svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .page-head .page-title { font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+  .themes { display: grid; gap: 10px; }
+  .theme-opt { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 10px 12px; min-height: 68px; background: var(--field); color: var(--ink); border: 2px solid var(--line); border-radius: 14px; font-weight: 600; }
+  .theme-opt[aria-pressed="true"] { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+  .theme-opt .sw { position: relative; flex: none; width: 70px; height: 46px; border-radius: 10px; border: 1.5px solid var(--line); overflow: hidden; }
+  .theme-opt .sw i { position: absolute; bottom: 6px; width: 10px; height: 10px; border-radius: 50%; }
+  .theme-opt .tx2 { flex: 1; min-width: 0; }
+  .theme-opt .tx2 b { display: block; font-size: 15px; }
+  .theme-opt .tx2 span { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .theme-opt .ck { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; }
+  .theme-opt[aria-pressed="true"] .ck { background: var(--primary); border-color: var(--primary); }
+  .theme-opt .ck svg { width: 13px; height: 13px; stroke: var(--primary-ink); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+  .theme-opt[aria-pressed="true"] .ck svg { opacity: 1; }
+  .pill { display: inline-block; margin-top: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
+  .pill.paid { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  /* recurring bills: one slim row until tapped open */
+  #billsCard { padding: 6px 18px; }
+  .bills-head { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 0; border-radius: 12px; background: transparent; color: var(--ink); text-align: left; font-weight: 400; }
+  .bills-head:active { transform: none; }
+  .bills-head .bh-l { flex: 1; min-width: 0; }
+  .bills-head .bh-t, .bills-head .bh-s { display: block; }
+  .bills-head .bh-t { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .bills-head .bh-s { font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .bills-head .bh-r { font-weight: 800; white-space: nowrap; }
+  .bills-head .bh-r small { font-weight: 600; color: var(--muted); font-size: 12px; }
+  .bills-head svg { width: 18px; height: 18px; flex: none; stroke: var(--muted); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s ease; }
+  .bills-head[aria-expanded="true"] svg { transform: rotate(180deg); }
+  #billsBody { padding: 4px 0 12px; }
 
   /* tab bar + fab */
   nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4); border-top: 2.6px solid var(--outline); padding-bottom: var(--safe-b); }
@@ -214,28 +386,43 @@
 <main>
   <div class="topbar">
     <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div>Budget</div>
-    <button class="switch" id="darkSwitch" role="switch" aria-checked="false" aria-label="Dark mode" title="Dark mode"></button>
     <div class="month-nav">
       <button id="prevMonth" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
       <span id="monthLabel" aria-live="polite"></span>
       <button id="nextMonth" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
+    <button class="switch" id="darkSwitch" role="switch" aria-checked="false" aria-label="Dark mode" title="Dark mode"></button>
+    <button class="gear glass" id="glassBtn" aria-label="Box transparency" title="Box transparency"><span id="glassNum">75%</span></button>
+    <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
   </div>
 
   <!-- OVERVIEW -->
   <section id="tab-overview">
     <div class="card hero">
-      <div class="eyebrow">Left to spend</div>
-      <div class="amount" id="heroLeft"></div>
-      <div class="sub" id="heroSub"></div>
+      <div class="top">
+        <div>
+          <div class="eyebrow">Left to spend</div>
+          <div class="amount" id="heroLeft"></div>
+          <div class="sub" id="heroSub"></div>
+        </div>
+        <div class="two">
+          <div><div class="l">Income</div><div class="v" id="heroIncome"></div></div>
+          <div><div class="l">Spent</div><div class="v" id="heroSpent"></div></div>
+        </div>
+      </div>
       <div class="meter"><i id="heroMeter"></i></div>
       <div class="meter-l"><span id="heroMeterL"></span><span id="heroMeterR"></span></div>
-      <div class="two">
-        <div><div class="l">Income</div><div class="v" id="heroIncome"></div></div>
-        <div><div class="l">Spent</div><div class="v" id="heroSpent"></div></div>
-      </div>
     </div>
     <div class="kpis" id="kpis"></div>
+    <div class="card" id="billsCard">
+      <button class="bills-head" id="billsToggle" aria-expanded="false" aria-controls="billsBody">
+        <span class="bh-l"><span class="bh-t">Recurring bills</span><span class="bh-s" id="billsSummary"></span></span>
+        <span class="bh-r" id="billsTotal"></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div id="billsBody" class="hidden"><div id="bills"></div>
+        <div class="actions"><button class="small" id="addBill">Add bill</button></div></div>
+    </div>
     <div class="card"><h2>Spending by category</h2><div id="donut"></div></div>
     <div class="card"><h2>Recent activity</h2><div id="recent"></div>
       <div class="actions"><button class="small ghost" data-goto="activity">View all</button></div></div>
@@ -274,6 +461,14 @@
         <button class="small ghost" id="importBtn">Import backup</button>
         <input type="file" id="importFile" accept="application/json" class="hidden">
       </div></div>
+  </section>
+
+  <!-- SETTINGS (opened from the gear in the top bar; not one of the four tabs) -->
+  <section id="tab-settings" class="hidden">
+    <div class="page-head"><button class="small ghost" id="settingsBack">Back</button><span class="page-title">Settings</span></div>
+    <div class="card"><h2>Theme</h2>
+      <div class="themes" id="themes"></div>
+      <p class="muted" style="font-size:12px;margin:12px 0 0">Light and dark mode is the small switch at the top. The button next to it shows how see-through the boxes are, and makes them 25% more see-through each tap. Both work with every theme except Plain.</p></div>
   </section>
 </main>
 
@@ -316,6 +511,23 @@
     </div>
   </form>
 </dialog>
+<dialog id="billDialog">
+  <form id="billForm" method="dialog">
+    <h3 id="billTitle">Recurring bill</h3>
+    <div class="field"><label for="billName">Name</label><input id="billName" type="text" maxlength="30" placeholder="e.g. Rent" required></div>
+    <div class="row">
+      <div class="field"><label for="billAmount">Amount</label><input id="billAmount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required></div>
+      <div class="field"><label for="billDay">Day of month</label><input id="billDay" type="number" inputmode="numeric" step="1" min="1" max="31" required></div>
+    </div>
+    <div class="field"><label for="billCategory">Category</label><select id="billCategory"></select></div>
+    <p class="muted" style="font-size:12px;margin:0 0 4px">Added as an expense on that day each month. Short months use their last day.</p>
+    <div class="actions">
+      <button type="submit" style="flex:1">Save</button>
+      <button type="button" class="danger hidden" id="billDelete">Delete</button>
+      <button type="button" class="ghost" id="billCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -342,11 +554,11 @@
     { id: "income", name: "General income" } // older entries were saved with this id
   ];
 
-  let state = { categories: DEFAULTS.map((c) => ({ ...c })), incomeCategories: INCOME_DEFAULTS.map((c) => ({ ...c })), transactions: [] };
+  let state = { categories: DEFAULTS.map((c) => ({ ...c })), incomeCategories: INCOME_DEFAULTS.map((c) => ({ ...c })), transactions: [], recurring: [] };
   let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let tab = "overview";
   let txType = "expense";
-  let editingTx = null, editingCat = null;
+  let editingTx = null, editingCat = null, editingBill = null;
   let filter = { q: "", type: "all", cat: "all" };
   let toastTimer = null;
 
@@ -374,8 +586,16 @@
   const prevOf = (d) => new Date(d.getFullYear(), d.getMonth() - 1, 1);
   const pct = (n) => (n >= 0 ? "+" : "") + Math.round(n) + "%";
 
+  // Recurring bills: { id, name, amount, day: 1-31, category, since: "YYYY-MM" (first month to charge), paid: ["YYYY-MM", ...] }.
+  // Older saved data has no `recurring` list at all.
+  const ensureRecurring = () => {
+    if (!Array.isArray(state.recurring)) state.recurring = [];
+    state.recurring.forEach((b) => { if (!Array.isArray(b.paid)) b.paid = []; });
+  };
+
   function load() {
     try { const p = JSON.parse(localStorage.getItem(KEY)); if (validState(p)) state = p; } catch (e) { /* use defaults */ }
+    ensureRecurring();
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
@@ -390,9 +610,13 @@
   /* ---------- Render ---------- */
   function render() {
     $("monthLabel").textContent = viewMonth.toLocaleDateString(undefined, { month: "short", year: "numeric" });
-    ["overview", "activity", "budgets", "insights"].forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== tab));
+    ["overview", "activity", "budgets", "insights", "settings"].forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== tab));
     document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+    // Settings is a page, not a tab: the month picker and the + button don't apply there
+    document.querySelector(".month-nav").classList.toggle("hidden", tab === "settings");
+    $("fab").classList.toggle("hidden", tab === "settings");
     renderCatOptions();
+    if (tab === "settings") renderSettings();
     if (tab === "overview") renderOverview();
     if (tab === "activity") renderActivity();
     if (tab === "budgets") renderBudgets();
@@ -434,6 +658,7 @@
       kpi("Daily avg", whole(avg), delta === null ? "No prior month" : pct(delta) + " vs " + prevOf(viewMonth).toLocaleDateString(undefined, { month: "short" }), delta !== null && delta > 0 ? "bad" : "") +
       kpi(s.isCur ? "Projected" : "Month total", whole(proj), s.budget > 0 ? "of " + whole(s.budget) + " budget" : "", s.budget > 0 && proj > s.budget ? "bad" : "");
 
+    renderBills();
     renderDonut(s.txs);
     const recent = s.txs.slice().sort(byDateDesc).slice(0, 5);
     $("recent").innerHTML = recent.length ? recent.map(txRow).join("") : '<div class="empty">No transactions this month. Tap + to add one.</div>';
@@ -447,8 +672,54 @@
     const i = inc ? 2 : cIdx(t.category);
     const when = new Date(t.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
     return '<div class="tx" data-edit="' + esc(t.id) + '" tabindex="0" role="button"><div class="avatar" style="background:' + tint(i) + ";color:" + cVar(i) + '">' + esc(initial(name)) + "</div>" +
-      '<div class="mid"><div class="t">' + esc(t.note || name) + '</div><div class="s">' + esc(name) + " &middot; " + esc(when) + "</div></div>" +
+      '<div class="mid"><div class="t">' + esc(t.note || name) + '</div><div class="s">' + esc(name) + (t.bill ? " &middot; Recurring" : "") + " &middot; " + esc(when) + "</div></div>" +
       '<div class="amt ' + (inc ? "good" : "") + '">' + (inc ? "+" : "&minus;") + money(t.amount) + "</div></div>";
+  }
+
+  const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+
+  function renderBills() {
+    const k = mKey(viewMonth), list = state.recurring.slice().sort((a, b) => a.day - b.day);
+    const dueOn = (b) => new Date(viewMonth.getFullYear(), viewMonth.getMonth(), Math.min(b.day, daysIn(viewMonth)));
+    const short = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const total = list.reduce((s, b) => s + b.amount, 0), next = list.find((b) => !b.paid.includes(k) && k >= b.since);
+    $("billsTotal").innerHTML = list.length ? whole(total) + " <small>/ mo</small>" : "";
+    $("billsSummary").textContent = !list.length ? "None yet. Tap to add one."
+      : next ? "Next: " + next.name + " · " + short(dueOn(next))
+      : list.every((b) => k < b.since) ? "Starts next month" : "Nothing more due this month";
+    if (!list.length) { $("bills").innerHTML = '<div class="empty">Add rent, subscriptions or anything that comes out each month.</div>'; return; }
+    $("bills").innerHTML = list.map((b) => {
+      const due = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), Math.min(b.day, daysIn(viewMonth)));
+      const c = catById(b.category), i = cIdx(b.category);
+      const pill = b.paid.includes(k) ? '<span class="pill paid">Paid</span>'
+        : k >= b.since ? '<span class="pill">Due ' + due.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</span>"
+        : '<span class="pill">Starts ' + new Date(+b.since.slice(0, 4), +b.since.slice(5, 7) - 1, 1).toLocaleDateString(undefined, { month: "short" }) + "</span>";
+      return '<div class="tx" data-bill="' + esc(b.id) + '" tabindex="0" role="button"><div class="avatar" style="background:' + tint(i) + ";color:" + cVar(i) + '">' + esc(initial(b.name)) + "</div>" +
+        '<div class="mid"><div class="t">' + esc(b.name) + '</div><div class="s">' + esc(c ? c.name : "Deleted category") + " &middot; the " + ord(b.day) + "</div></div>" +
+        '<div style="text-align:right"><div class="amt">' + money(b.amount) + "</div>" + pill + "</div></div>";
+    }).join("");
+  }
+
+  // Adds an expense for every bill whose due date has arrived and that hasn't been charged for that month yet.
+  // Runs when the app opens or comes back to the front, so a bill is caught up even if the app was closed on its due day.
+  function applyRecurring() {
+    const now = new Date(), nowK = mKey(now);
+    let added = 0;
+    state.recurring.forEach((b) => {
+      let d = new Date(+b.since.slice(0, 4), +b.since.slice(5, 7) - 1, 1);
+      for (let n = 0; n < 36 && mKey(d) <= nowK; n++, d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+        const k = mKey(d), due = new Date(d.getFullYear(), d.getMonth(), Math.min(b.day, daysIn(d)));
+        if (b.paid.includes(k) || due > now) continue;
+        state.transactions.push({ id: uid(), type: "expense", amount: b.amount, date: dstr(due), category: b.category, note: b.name, bill: b.id });
+        b.paid.push(k); added++;
+      }
+    });
+    return added;
+  }
+  // a new bill starts at its next due date (today counts), so adding it mid-month never double-charges a bill already logged by hand
+  function firstMonth(day) {
+    const now = new Date();
+    return mKey(Math.min(day, daysIn(now)) >= now.getDate() ? now : new Date(now.getFullYear(), now.getMonth() + 1, 1));
   }
 
   function renderDonut(txs) {
@@ -463,7 +734,11 @@
       const s = '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="' + cVar(cIdx(i.id)) + '" stroke-width="5" stroke-dasharray="' + d + " " + (100 - d) + '" stroke-dashoffset="' + off + '"><title>' + esc(i.c ? i.c.name : "Deleted category") + ": " + money(i.v) + "</title></circle>";
       off -= p; return s;
     }).join("");
-    const legend = items.map((i) => '<div><i style="background:' + cVar(cIdx(i.id)) + '"></i>' + esc(i.c ? i.c.name : "Deleted category") + "<b>" + whole(i.v) + '</b><span class="muted" style="min-width:34px;text-align:right">' + Math.round((i.v / sum) * 100) + "%</span></div>").join("");
+    // the legend stays at four short rows: the three biggest categories, then everything else rolled into one line
+    const shown = items.length > 4 ? items.slice(0, 3).map((i) => ({ color: cVar(cIdx(i.id)), name: i.c ? i.c.name : "Deleted category", v: i.v }))
+      .concat([{ color: "var(--muted)", name: (items.length - 3) + " others", v: items.slice(3).reduce((s, i) => s + i.v, 0) }])
+      : items.map((i) => ({ color: cVar(cIdx(i.id)), name: i.c ? i.c.name : "Deleted category", v: i.v }));
+    const legend = shown.map((i) => '<div><i style="background:' + i.color + '"></i><span class="nm">' + esc(i.name) + "</span><b>" + whole(i.v) + '</b><span class="muted" style="min-width:30px;text-align:right">' + Math.round((i.v / sum) * 100) + "%</span></div>").join("");
     $("donut").innerHTML = '<div class="donut-wrap"><svg class="donut" viewBox="0 0 42 42" role="img" aria-label="Spending by category"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--track)" stroke-width="5"/>' + rings +
       '<text class="cb" x="21" y="22.4">' + whole(sum) + '</text><text class="cs" x="21" y="27">SPENT</text></svg><div class="legend">' + legend + "</div></div>";
   }
@@ -666,12 +941,94 @@
     $("catDialog").close(); commit(); toast("Category saved");
   });
 
+  /* ---------- Recurring bill dialog ---------- */
+  function openBill(id) {
+    editingBill = id ? state.recurring.find((b) => b.id === id) : null;
+    $("billTitle").textContent = editingBill ? "Edit bill" : "New recurring bill";
+    $("billName").value = editingBill ? editingBill.name : "";
+    $("billAmount").value = editingBill ? editingBill.amount : "";
+    $("billDay").value = editingBill ? editingBill.day : 1;
+    $("billCategory").innerHTML = state.categories.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>").join("");
+    if (editingBill && catById(editingBill.category)) $("billCategory").value = editingBill.category;
+    $("billDelete").classList.toggle("hidden", !editingBill);
+    $("billDialog").showModal();
+  }
+  $("addBill").onclick = () => openBill(null);
+  $("billCancel").onclick = () => $("billDialog").close();
+  $("billDelete").onclick = () => {
+    if (!editingBill || !confirm('Stop "' + editingBill.name + '"? Payments already added stay in Activity.')) return;
+    state.recurring = state.recurring.filter((b) => b.id !== editingBill.id);
+    $("billDialog").close(); commit(); toast("Bill removed");
+  };
+  $("billForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("billName").value.trim(), amount = parseFloat($("billAmount").value), day = parseInt($("billDay").value, 10), category = $("billCategory").value;
+    if (!name || !(amount > 0) || !(day >= 1 && day <= 31)) return;
+    if (!category) { alert("Add an expense category in Budgets first."); return; }
+    const rec = { name, amount: Math.round(amount * 100) / 100, day, category };
+    if (editingBill) { Object.assign(editingBill, rec); if (!editingBill.paid.length) editingBill.since = firstMonth(day); }
+    else state.recurring.push({ id: uid(), ...rec, since: firstMonth(day), paid: [] });
+    $("billDialog").close();
+    const added = applyRecurring();
+    commit(); toast(added ? "Bill saved and added to Activity" : "Bill saved");
+  });
+
+  /* ---------- Looks (themes) and the Settings page ---------- */
+  // `sky` and `dots` only draw the little preview on each Settings row; the real colours live in the CSS sets above.
+  // `scene` names the backdrop recipe in SCENES (further down).
+  const SKINS = {
+    sakura: { name: "Cherry blossom", note: "Lavender sky, a blossoming tree and falling petals", sky: ["#ebdffa", "#e3d1f6", "#f2d9f0"], dots: ["#c2417a", "#6a5acd", "#1f9e8f"] },
+    maple: { name: "Autumn maple", note: "Warm dusk, a maple in red and gold and falling leaves", sky: ["#fde6c8", "#f9cf9f", "#f4b98a"], dots: ["#c4531a", "#d9a21b", "#b0344a"] },
+    city: { name: "City skyline", note: "A skyline with lit windows under a starry sky, and the odd shooting star at night", sky: ["#04071a", "#0b1535", "#1b2a5a"], dots: ["#7ea2ff", "#ff7ac8", "#ffd36e"] },
+    ocean: { name: "Ocean sunset", note: "The sun sinking into moving waves, with seagulls and a sailboat", sky: ["#5b5bb0", "#e8788a", "#ffc27a"], dots: ["#0e7490", "#e0603f", "#ffc27a"] },
+    plain: { name: "Plain", note: "Flat colors, no scenery or animation. The lightest on your phone", sky: ["#f4f4f6", "#f4f4f6", "#f4f4f6"], dots: ["#2f6fed", "#7c4dff", "#1f9e8f"] }
+  };
+  const root = document.documentElement;
+  const paintBar = () => document.querySelector('meta[name="theme-color"]').setAttribute("content", window.SKIN_BARS[root.getAttribute("data-skin")][root.getAttribute("data-theme") === "dark" ? 1 : 0]);
+  function setSkin(id, remember) {
+    if (!SKINS[id]) id = "sakura";
+    root.setAttribute("data-skin", id);
+    if (remember) { try { localStorage.setItem("budget-skin", id); } catch (e) { /* choice just won't persist */ } }
+    paintBar();
+    buildScene();  // swap the backdrop for this look (it also repaints the mountain in the new colours)
+    renderSettings();
+  }
+  function renderSettings() {
+    const cur = root.getAttribute("data-skin");
+    $("themes").innerHTML = Object.keys(SKINS).map((id) => {
+      const s = SKINS[id];
+      return '<button class="theme-opt" data-skin-id="' + id + '" aria-pressed="' + (id === cur) + '"><span class="sw" style="background:linear-gradient(160deg,' + s.sky[0] + "," + s.sky[1] + " 60%," + s.sky[2] + ')">' +
+        s.dots.map((c, i) => '<i style="left:' + (8 + i * 16) + "px;background:" + c + '"></i>').join("") + '</span>' +
+        '<span class="tx2"><b>' + esc(s.name) + "</b><span>" + esc(s.note) + '</span></span><span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>';
+    }).join("");
+  }
+  let lastTab = "overview";
+  $("settingsBtn").onclick = () => { if (tab !== "settings") lastTab = tab; tab = "settings"; render(); window.scrollTo(0, 0); };
+  $("settingsBack").onclick = () => { tab = lastTab; render(); window.scrollTo(0, 0); };
+  $("themes").addEventListener("click", (e) => { const b = e.target.closest("[data-skin-id]"); if (b && b.dataset.skinId !== root.getAttribute("data-skin")) setSkin(b.dataset.skinId, true); });
+
+  /* ---------- Box transparency button: each tap makes the boxes 25% more see-through, then back to solid after 100% ---------- */
+  const GLASS = ["0", "25", "50", "75", "100"];
+  function showGlass() {
+    const lv = root.getAttribute("data-glass");
+    $("glassNum").textContent = lv + "%";  // the button always shows which setting you're on
+    $("glassBtn").setAttribute("aria-label", "Box transparency " + lv + " percent. Tap to change.");
+    $("glassBtn").title = "Box transparency: " + lv + "%";
+  }
+  $("glassBtn").onclick = () => {
+    const next = GLASS[(GLASS.indexOf(root.getAttribute("data-glass")) + 1) % GLASS.length];
+    root.setAttribute("data-glass", next);
+    try { localStorage.setItem("budget-glass", next); } catch (e) { /* choice just won't persist */ }
+    showGlass(); toast("Boxes " + next + "% see-through");
+  };
+  showGlass();
+
   /* ---------- Dark mode switch ---------- */
-  const root = document.documentElement, darkSwitch = $("darkSwitch");
+  const darkSwitch = $("darkSwitch");
   function showTheme() { darkSwitch.setAttribute("aria-checked", root.getAttribute("data-theme") === "dark" ? "true" : "false"); }
   function setTheme(t, remember) {
     root.setAttribute("data-theme", t);
-    document.querySelector('meta[name="theme-color"]').setAttribute("content", t === "dark" ? "#1a1030" : "#ebdffa");
+    paintBar();
     if (remember) { try { localStorage.setItem("budget-theme", t); } catch (e) { /* choice just won't persist */ } }
     showTheme();
     window.dispatchEvent(new Event("themechange"));
@@ -693,13 +1050,19 @@
   $("nextMonth").onclick = () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1); render(); };
   ["recent", "txList"].forEach((id) => $(id).addEventListener("click", (e) => { const r = e.target.closest("[data-edit]"); if (r) openTx(r.dataset.edit); }));
   $("categories").addEventListener("click", (e) => { const r = e.target.closest("[data-cat]"); if (r) openCat(r.dataset.cat); });
+  $("billsToggle").onclick = () => {
+    const open = $("billsToggle").getAttribute("aria-expanded") !== "true";
+    $("billsToggle").setAttribute("aria-expanded", open ? "true" : "false");
+    $("billsBody").classList.toggle("hidden", !open);
+  };
+  $("bills").addEventListener("click", (e) => { const r = e.target.closest("[data-bill]"); if (r) openBill(r.dataset.bill); });
   // rows act as buttons: Enter or Space opens them from the keyboard
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
-    const r = e.target.closest && e.target.closest("[data-edit],[data-cat]");
+    const r = e.target.closest && e.target.closest("[data-edit],[data-cat],[data-bill]");
     if (!r || r !== e.target) return;
     e.preventDefault();
-    if (r.dataset.edit) openTx(r.dataset.edit); else openCat(r.dataset.cat);
+    if (r.dataset.edit) openTx(r.dataset.edit); else if (r.dataset.bill) openBill(r.dataset.bill); else openCat(r.dataset.cat);
   });
   $("search").addEventListener("input", (e) => { filter.q = e.target.value; renderActivity(); });
   $("filterCat").addEventListener("change", (e) => { filter.cat = e.target.value; renderActivity(); });
@@ -731,14 +1094,272 @@
         const data = JSON.parse(reader.result);
         if (!validState(data)) throw new Error("bad");
         if (!confirm("Replace all current data with this backup?")) return;
-        state = data; ensureIncome(); commit(); toast("Backup restored");
+        state = data; ensureIncome(); ensureRecurring(); commit(); toast("Backup restored");
       } catch (err) { alert("That file isn't a valid backup."); }
     };
     reader.readAsText(file);
   });
 
   /* ---------- Cherry blossom backdrop ---------- */
+  // Backdrop recipe for each look: the same crooked tree and mountains, grown with that look's blossoms or leaves.
+  // `pinks` tints the litter on the ground, `tone` the canopy from light (top) to deep (bottom), `fall` the falling petals/leaves.
+  // `plain: null` means no scenery at all: just the flat sky colour.
+  const LEAF = "M0 -8 L1.7 -4.4 L4.6 -5.6 L3.5 -2.2 L7.4 -1.5 L4.6 1.2 L5.6 4 L1.9 3.2 L.6 7.6 L-.6 7.6 L-1.9 3.2 L-5.6 4 L-4.6 1.2 L-7.4 -1.5 L-3.5 -2.2 L-4.6 -5.6 L-1.7 -4.4Z";
+  const SCENES = {
+    sakura: { leaf: false, paint: true, petals: 10, pinks: ["#ffb7d0", "#ff9cc0", "#ffd1e1", "#f78fb3", "#ffc4d8", "#f06f9f"],
+      tone: [["#fff6fa", "#ffeaf2", "#ffe0ec"], ["#ffcade", "#ffbcd5", "#ffd6e5"], ["#f7a1c0", "#f294b7", "#ee8aae"]],
+      fall: [["#ffe3ee", "#ff9cc0"], ["#fff0f5", "#ffb7d0"], ["#ffc4d8", "#f06f9f"]] },
+    maple: { leaf: true, pinks: ["#f7b04a", "#ee8a1f", "#d9481f", "#ffc93c", "#c93a1a", "#e2602f"],
+      tone: [["#ffd45a", "#ffc93c", "#ffe08a"], ["#f59a2e", "#ee8a1f", "#f7ab4a"], ["#d9481f", "#c93a1a", "#e2602f"]],
+      fall: [["#ffd45a", "#f59a2e"], ["#f7ab4a", "#d9481f"], ["#e2602f", "#a8301a"]] },
+    city: { city: true },
+    ocean: { ocean: true },
+    plain: null
+  };
+  let sceneOff = null;
+
+  // A sunset over the sea, painted pixel by pixel (like the mountains) instead of drawn from flat shapes: noise-built clouds lit from the
+  // sun's side, a sun with a soft bloom and a hazy horizon, far headlands softened by distance, and a sea made from a perspective wave
+  // field that reflects the sky (more at the horizon, less up close) and breaks the sun's glitter path up on the wave faces.
+  // The picture is painted once (and again if light/dark changes). The only motion is a slow shimmer in the glitter and two gliding gulls.
+  function buildOcean() {
+    const NS = "http://www.w3.org/2000/svg";
+    let seed = 29;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const el = (name, attrs, parent) => { const e = document.createElementNS(NS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+    const W = 400, H = 800, HY = 330, SX = 245, SY = HY - 4, HS = H - HY;  // canvas size, horizon, sun position, sea height
+    const GW = 300, GX = SX - GW / 2;  // the glitter layers cover a column of sea around the sun
+    const svg = el("svg", { viewBox: "0 0 400 800", preserveAspectRatio: "xMidYMid slice" });
+    const defs = el("defs", {}, svg);
+    const base = el("image", { x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" }, svg);
+    const glA = el("image", { x: GX, y: HY, width: GW, height: HS, preserveAspectRatio: "none", class: "shim" }, svg);
+    const glB = el("image", { x: GX, y: HY, width: GW, height: HS, preserveAspectRatio: "none", class: "shim", style: "animation-delay:-4.5s" }, svg);
+
+    // value noise on a 64x64 lattice, summed into fractal noise
+    const lat = Array.from({ length: 4096 }, rnd);
+    const sm = (t) => t * t * (3 - 2 * t);
+    const n2 = (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), g = (a, b) => lat[((b & 63) << 6) | (a & 63)];
+      return (g(xi, yi) * (1 - fx) + g(xi + 1, yi) * fx) * (1 - fy) + (g(xi, yi + 1) * (1 - fx) + g(xi + 1, yi + 1) * fx) * fy;
+    };
+    const fbm = (x, y, o) => { let s = 0, a = .5, f = 1, tot = 0; for (let i = 0; i < o; i++) { s += a * n2(x * f + i * 17.3, y * f + i * 9.1); tot += a; a *= .5; f *= 2.03; } return s / tot; };
+    const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const cl = (x) => Math.min(1, Math.max(0, x));
+    const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    // the field of wave heights (0..1) for the sea, in perspective: waves shrink and bunch up toward the horizon; they run sideways
+    const hf = new Float32Array(W * HS), spf = new Float32Array(W * HS);
+    for (let y = 0; y < HS; y++) {
+      const t = (y + .5) / HS, z = 1 / (t * .92 + .028);
+      // finer wave detail fades in gradually with nearness (an abrupt switch would draw a visible line across the sea)
+      const wt = [1, 1, ss(.03, .2, t), ss(.12, .45, t)], rw = .1 * ss(.25, .75, t);
+      for (let x = 0; x < W; x++) {
+        const wx = ((x - 200) / 200) * z * .9 + 11, wz = z * 1.35 + 5;
+        let s = 0, a = .5, f = 1, tot = 0;
+        for (let o = 0; o < 4; o++) { s += wt[o] * a * n2(wx * f + o * 17.3, wz * f + o * 9.1); tot += wt[o] * a; a *= .5; f *= 2.03; }
+        hf[y * W + x] = (s / tot) * .68 + n2(((x - 200) / 200) * z * .25 + 3, z * .5 + 9) * .22 + rw * n2(wx * 4.6 + 40, wz * 5.4 + 12);
+        // the sun's sparkle comes from a separate, finer pattern, stretched sideways (so it shows as short horizontal dashes)
+        spf[y * W + x] = .6 * n2(wx * 6.4 + 70, wz * 14 + 30) + .4 * n2(wx * 14 + 5, wz * 31 + 3);
+      }
+    }
+    // a headland's outline: a smooth hump between two x positions, roughened a little
+    const bump = (x, a, b, hgt, p) => (x <= a || x >= b) ? 0 : hgt * Math.pow(Math.sin(Math.PI * (x - a) / (b - a)), p);
+    const rough = (x, v) => v > 0 ? v + (fbm(x * .09, 1.7, 3) - .5) * 2.6 * Math.min(1, v / 3) : 0;
+    const farLand = (x) => rough(x, Math.max(bump(x, -10, 74, 5.5, 1.2), bump(x, 268, 402, 15, 1.3)));
+    const nearLand = (x) => rough(x, bump(x, 318, 402, 9, 1.2));
+    const stars = Array.from({ length: 110 }, () => [rnd() * W, Math.pow(rnd(), 1.5) * (HY - 40), .35 + rnd() * .65, .5 + rnd() * .7]);
+
+    function paint() {
+      const cs = getComputedStyle(document.documentElement);
+      const num = (n) => parseFloat(cs.getPropertyValue(n));
+      const hex = (n) => { const h = cs.getPropertyValue(n).trim().replace("#", ""), v = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+      const rgba = (n) => { const m = cs.getPropertyValue(n).match(/[\d.]+/g).map(Number); return [m[0], m[1], m[2], m.length > 3 ? m[3] : 1]; };
+      const sky1 = hex("--sky1"), sky2 = hex("--sky2"), sky3 = hex("--sky3"), sea1 = hex("--sea1"), sea2 = hex("--sea2"), sea3 = hex("--sea3");
+      const cSun = hex("--sun"), cEdge = hex("--sun-edge"), glow = rgba("--sun-glow"), cGlint = hex("--glint"), cFoam = hex("--foam");
+      const cShade = hex("--cloud2"), cMid = hex("--cloud"), cHot = hex("--cloud3"), cIsland = hex("--island"), starO = num("--star-o") || 0;
+      const haze = mix(sea1, sky3, .5);
+
+      const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+      const ctx = cv.getContext("2d"), im = ctx.createImageData(W, H), px = im.data;
+      const cloudA = new Float32Array(W * HY);
+      const set = (i, c, e) => { const j = i * 4, d = (Math.random() - .5) * 1.7; px[j] = c[0] + d; px[j + 1] = c[1] + d; px[j + 2] = c[2] + d; px[j + 3] = 255; };
+
+      // ---- sky ----
+      for (let y = 0; y < HY; y++) {
+        const ty = y / HY;
+        const sky = ty < .6 ? mix(sky1, sky2, sm(ty / .6)) : mix(sky2, sky3, sm((ty - .6) / .4));
+        for (let x = 0; x < W; x++) {
+          const dx = x - SX, dy = y - SY;
+          let c = sky;
+          c = mix(c, [glow[0], glow[1], glow[2]], cl(glow[3] * (.5 * Math.exp(-dx * dx / (2 * 140 * 140) - dy * dy / (2 * 85 * 85)) + .55 * Math.exp(-(dx * dx + dy * dy) / (2 * 42 * 42)))));
+          // clouds: stretched sideways, thickest mid-sky, thinning toward the horizon; the edge facing the sun catches the light
+          const cu = x * .011 + 3.3, cv2 = y * .042 + 8.1, d = fbm(cu, cv2, 5), mask = ss(.07, .22, ty) * (1 - ss(.8, .97, ty)), a = ss(.5, .74, d) * mask;
+          if (a > .004) {
+            const vl = Math.hypot(dx, dy) || 1, k = 7;
+            const d2 = fbm(cu - (dx / vl) * .011 * k * 1.2, cv2 - (dy / vl) * .042 * k * .6, 5);
+            const lit = cl((d - d2) * 10 + .42), near = Math.exp(-dx * dx / (2 * 170 * 170)) * (.5 + .5 * ss(.4, 1, ty));
+            let cc = mix(cShade, cMid, ss(.3, .8, d));
+            cc = mix(cc, mix(cMid, cHot, lit), lit * (.3 + .7 * near));
+            c = mix(c, cc, a * .92);
+            cloudA[y * W + x] = a;
+          }
+          // the sun: a soft-edged disc, paler in the middle
+          const sd = Math.hypot(dx, dy), cover = cl((30 - sd) / 1.6 + .5);
+          if (cover > 0) c = mix(c, mix(cSun, cEdge, ss(.55, 1, sd / 30)), cover);
+          set(y * W + x, c);
+        }
+      }
+      // ---- far land: hazy, so it fades toward the sky colour; the nearer headland is darker ----
+      for (let x = 0; x < W; x++) {
+        const fh = farLand(x), nh = nearLand(x);
+        for (let y = Math.max(0, Math.floor(HY - Math.max(fh, nh) - 2)); y < HY; y++) {
+          const i = y * W + x, j = i * 4;
+          const cf = cl(y - (HY - fh) + .5), cn = cl(y - (HY - nh) + .5);
+          if (cf > 0) { const c = mix([px[j], px[j + 1], px[j + 2]], mix(cIsland, sky3, .5), cf * .85); px[j] = c[0]; px[j + 1] = c[1]; px[j + 2] = c[2]; }
+          if (cn > 0) { const c = mix([px[j], px[j + 1], px[j + 2]], mix(cIsland, sky3, .12), cn); px[j] = c[0]; px[j + 1] = c[1]; px[j + 2] = c[2]; }
+        }
+      }
+      // ---- stars (after sunset only; the --star-o setting is 0 in light mode) ----
+      if (starO > 0) stars.forEach((s) => {
+        for (let yy = Math.floor(s[1] - 1.5); yy <= s[1] + 1.5; yy++) for (let xx = Math.floor(s[0] - 1.5); xx <= s[0] + 1.5; xx++) {
+          if (xx < 0 || xx >= W || yy < 0 || yy >= HY) continue;
+          const a = cl(1 - Math.hypot(xx - s[0], yy - s[1]) / (s[3] * 1.3)) * s[2] * starO * (1 - cl(cloudA[yy * W + xx] * 1.6)) * (1 - ss(.5, .9, yy / HY));
+          const j = (yy * W + xx) * 4; px[j] += (255 - px[j]) * a; px[j + 1] += (255 - px[j + 1]) * a; px[j + 2] += (255 - px[j + 2]) * a;
+        }
+      });
+      // ---- sea ----
+      const ga = document.createElement("canvas"), gb = document.createElement("canvas"); ga.width = gb.width = GW; ga.height = gb.height = HS;
+      const ia = ga.getContext("2d").createImageData(GW, HS), ib = gb.getContext("2d").createImageData(GW, HS);
+      for (let y = 0; y < HS; y++) {
+        const t = (y + .5) / HS, att = Math.pow(ss(.01, .4, t), .8), fres = .06 + .9 * Math.pow(1 - t, 2.6);
+        const deep = mix(sea2, sea3, Math.pow(t, .8));
+        const refl = mix(sea1, mix(sky2, sky1, ss(.3, 1, t)), ss(0, .55, t));
+        const sig = 8 + 52 * Math.pow(t, .8);
+        for (let x = 0; x < W; x++) {
+          const i = y * W + x, h = hf[i];
+          const up = hf[Math.max(0, i - W)], dn = hf[Math.min(hf.length - 1, i + W)], lf = hf[x > 0 ? i - 1 : i], rt = hf[x < W - 1 ? i + 1 : i];
+          const sy = (dn - up) * att * 20, sx = (rt - lf) * att * 12;
+          const gx = (x - SX) / sig, gaus = Math.exp(-.5 * gx * gx);
+          // facets tipped toward the horizon mirror the bright low sky, facets tipped away mirror the darker sky overhead
+          const m = cl(fres * (.45 + 1.15 * cl(.5 - sy * .9 + sx * 0)));
+          let c = mix(deep, refl, m);
+          c = mix(c, [c[0] * (.82 + .36 * h), c[1] * (.82 + .36 * h), c[2] * (.82 + .36 * h)], .8);
+          c = mix(c, [glow[0], glow[1], glow[2]], cl(gaus * glow[3] * .33 * (.35 + fres)));  // the sun's warm light on the water, under the sparkle
+          c = mix(c, cFoam, .16 * ss(.6, .72, h) * ss(.5, .92, t));  // pale water on the biggest crests near us
+          c = mix(haze, c, ss(0, .06, t));  // haze right at the horizon
+          set((HY + y) * W + x, c);
+          // sparkle on wave faces: two slightly different patterns that fade in and out against each other
+          if (x >= GX && x < GX + GW) {
+            const f1 = ss(.56, .7, spf[i]), f2 = ss(.56, .7, spf[Math.min(spf.length - 1, Math.max(0, i + 9 - 2 * W))]), fall = gaus * Math.pow(1 - t, 1.5) * ss(.005, .06, t) * ss(0, 30, x - GX) * ss(0, 30, GX + GW - x) * 1.9;
+            const o = (y * GW + (x - GX)) * 4;
+            ia.data[o] = ib.data[o] = cGlint[0]; ia.data[o + 1] = ib.data[o + 1] = cGlint[1]; ia.data[o + 2] = ib.data[o + 2] = cGlint[2];
+            ia.data[o + 3] = cl(fall * f1) * 235; ib.data[o + 3] = cl(fall * f2) * 235;
+          }
+        }
+      }
+      ctx.putImageData(im, 0, 0);
+      base.setAttribute("href", cv.toDataURL("image/jpeg", .93));
+      ga.getContext("2d").putImageData(ia, 0, 0); gb.getContext("2d").putImageData(ib, 0, 0);
+      glA.setAttribute("href", ga.toDataURL("image/png")); glB.setAttribute("href", gb.toDataURL("image/png"));
+    }
+    paint();
+    window.addEventListener("themechange", paint);  // the sky and sea colours come from the theme, so repaint when light/dark changes
+    sceneOff = () => window.removeEventListener("themechange", paint);
+
+    // small details drawn over the picture: a lighthouse on the headland, one sailboat with a faint reflection, a few far-off gulls
+    const lh = nearLand(352);
+    el("circle", { cx: 352, cy: HY - lh - 4.2, r: 5.5, style: "fill:var(--glint)", opacity: ".22" }, svg);
+    el("path", { d: "M349.8 " + (HY - lh + 1.5) + " L354.2 " + (HY - lh + 1.5) + " L353.3 " + (HY - lh - 12) + " L350.7 " + (HY - lh - 12) + "Z", style: "fill:var(--sail)", opacity: ".92" }, svg);
+    el("rect", { x: 350.9, y: HY - lh - 14.4, width: 2.2, height: 2.4, style: "fill:var(--glint)" }, svg);
+    el("path", { d: "M350.2 " + (HY - lh - 14.4) + " L353.8 " + (HY - lh - 14.4) + " L352 " + (HY - lh - 17.2) + "Z", style: "fill:var(--boat)" }, svg);
+    const rg = el("linearGradient", { id: "obr", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+    el("stop", { offset: "0", style: "stop-color:var(--boat)", "stop-opacity": ".4" }, rg);
+    el("stop", { offset: "1", style: "stop-color:var(--boat)", "stop-opacity": "0" }, rg);
+    el("rect", { x: 112.4, y: HY + 3, width: 2, height: 17, fill: "url(#obr)" }, svg);
+    const boat = el("g", { transform: "translate(113 " + (HY + 2) + ") scale(.8)" }, svg);
+    el("path", { d: "M-8 0 L8 0 L5.5 3.4 L-5.5 3.4Z", style: "fill:var(--boat)" }, boat);
+    el("path", { d: "M-.5 -1 L-.5 -19 L-8 -2.6Z", style: "fill:var(--sail)" }, boat);
+    el("path", { d: "M.8 -1 L.8 -13 L6.6 -2.6Z", style: "fill:var(--sail)", opacity: ".85" }, boat);
+    [[58, 108, .9], [70, 119, .7], [330, 150, .8], [344, 158, .6]].forEach((b) =>
+      el("path", { d: "M-5 1.2 Q-2.6 -2.2 0 0 Q2.6 -2.2 5 1.2", transform: "translate(" + b[0] + " " + b[1] + ") scale(" + b[2] + ")", fill: "none", style: "stroke:var(--gull)", "stroke-width": "1", "stroke-linecap": "round", opacity: ".6" }, svg));
+    // two gulls gliding across, wings held out
+    const GULL = "M0 0 C-3 -1.6 -8 -5.4 -16 -2.2 C-9.6 -2.4 -5.6 -.2 -2.6 2.4 C-1.7 3 -.8 3.7 0 4.3 C.8 3.7 1.7 3 2.6 2.4 C5.6 -.2 9.6 -2.4 16 -2.2 C8 -5.4 3 -1.6 0 0Z";
+    [[150, 1.05, 60, -18, 190], [232, .78, 80, -50, 330]].forEach((s) => {  // y, size, seconds to cross, delay, resting x
+      const travel = el("g", { class: "gl", style: "--gd:" + s[2] + "s;--gdelay:" + s[3] + "s;--gs:" + s[4] + "px" }, svg);
+      el("path", { d: GULL, transform: "translate(-60 " + s[0] + ") scale(" + s[1] + ")", style: "fill:var(--gull)" }, travel);
+    });
+    $("scene").appendChild(svg);
+  }
+
+  // A night skyline: stars, a moon, two layers of buildings with lit windows, and a tall tower with a blinking light.
+  // Seeded, so it is the same every visit. Only ~10 things animate (a few stars, the tower light, three shooting stars).
+  function buildCity() {
+    const NS = "http://www.w3.org/2000/svg";
+    let seed = 11;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const el = (name, attrs, parent) => { const e = document.createElementNS(NS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+    const svg = el("svg", { viewBox: "0 0 400 800", preserveAspectRatio: "xMidYMid slice" });
+    const defs = el("defs", {}, svg);
+    const sky = el("linearGradient", { id: "csky", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+    [["0", "--sky1"], [".6", "--sky2"], ["1", "--sky3"]].forEach((s) => el("stop", { offset: s[0], style: "stop-color:var(" + s[1] + ")" }, sky));
+    el("rect", { width: 400, height: 800, fill: "url(#csky)" }, svg);
+    const hz = el("radialGradient", { id: "chz", cx: ".5", cy: "1", r: ".75" }, defs);  // city glow rising from behind the skyline
+    el("stop", { offset: "0", style: "stop-color:var(--sky3)", "stop-opacity": ".85" }, hz);
+    el("stop", { offset: "1", style: "stop-color:var(--sky3)", "stop-opacity": "0" }, hz);
+    el("rect", { x: 0, y: 330, width: 400, height: 470, fill: "url(#chz)" }, svg);
+
+    const stars = el("g", { style: "opacity:var(--star-o)" }, svg);
+    for (let i = 0; i < 120; i++) {
+      const c = el("circle", { cx: (rnd() * 400).toFixed(1), cy: (Math.pow(rnd(), 1.5) * 470).toFixed(1), r: (.35 + rnd() * rnd() * 1.3).toFixed(2), fill: "#fff", opacity: (.35 + rnd() * .65).toFixed(2) }, stars);
+      if (i < 10) { c.setAttribute("class", "tw"); c.setAttribute("style", "--o:" + c.getAttribute("opacity") + ";animation-delay:-" + (rnd() * 3.4).toFixed(2) + "s;animation-duration:" + (2.6 + rnd() * 2.4).toFixed(1) + "s"); }
+    }
+    const mg = el("radialGradient", { id: "cmoon" }, defs);
+    el("stop", { offset: "0", style: "stop-color:var(--orb-glow)" }, mg);
+    el("stop", { offset: "1", "stop-color": "#fff", "stop-opacity": "0" }, mg);
+    el("circle", { cx: 322, cy: 104, r: 105, fill: "url(#cmoon)" }, svg);
+    el("circle", { cx: 322, cy: 104, r: 22, style: "fill:var(--orb)" }, svg);
+    [[-7, -5, 4], [6, 4, 5.4], [-2, 9, 2.6], [8, -8, 2.2]].forEach((m) => el("circle", { cx: 322 + m[0], cy: 104 + m[1], r: m[2], fill: "#000", opacity: ".06" }, svg));
+
+    function skyline(fill, baseY, minH, maxH, minW, maxW, windows, opacity) {
+      const g = el("g", { opacity }, svg);
+      let x = -10;
+      while (x < 410) {
+        const w = minW + rnd() * (maxW - minW), h = minH + rnd() * (maxH - minH), top = baseY - h, st = "fill:var(" + fill + ")";
+        el("rect", { x: x.toFixed(1), y: top.toFixed(1), width: (w + 1).toFixed(1), height: (h + 60).toFixed(1), style: st }, g);
+        if (rnd() < .4) el("rect", { x: (x + w * .18).toFixed(1), y: (top - 8 - rnd() * 12).toFixed(1), width: (w * .64).toFixed(1), height: 20, style: st }, g);  // stepped crown
+        if (rnd() < .3) el("rect", { x: (x + w / 2 - .6).toFixed(1), y: (top - 14 - rnd() * 14).toFixed(1), width: 1.2, height: 30, style: st }, g);  // antenna
+        if (windows) {
+          const cols = Math.floor((w - 6) / 6), rows = Math.floor((h - 8) / 8);
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (rnd() < .3)
+            el("rect", { x: (x + 3 + c * 6).toFixed(1), y: (top + 5 + r * 8).toFixed(1), width: 2.6, height: 3.6, style: "fill:var(--win)", opacity: (.45 + rnd() * .55).toFixed(2) }, g);
+        }
+        x += w + rnd() * 3;
+      }
+    }
+    skyline("--bld1", 650, 100, 240, 22, 42, false, ".95");  // far, paler, no windows
+    // the tower: slim shaft, an observation deck, a spire and a slow red light
+    el("path", { d: "M262 800 L282 800 L278.4 560 L274.6 540 L273 468 L271 468 L269.4 540 L265.6 560Z", style: "fill:var(--bld2)" }, svg);
+    el("rect", { x: 263, y: 536, width: 18, height: 9, rx: 3, style: "fill:var(--bld2)" }, svg);
+    el("circle", { cx: 272, cy: 466, r: 1.7, fill: "#ff4d4d", class: "blink" }, svg);
+    skyline("--bld2", 800, 110, 300, 28, 54, true, "1");  // near, dark, with lit windows
+
+    $("scene").appendChild(svg);
+    // left %, top %, seconds per cycle, first delay. Six streaks with staggered cycles: about one every 4 seconds on average,
+    // each on screen for just over a second.
+    [[72, 6, 17, 3], [58, 18, 23, 10], [84, 2, 29, 17], [46, 9, 19, 6], [78, 24, 26, 13], [64, 3, 31, 21]].forEach((s) => {
+      const p = document.createElement("i");
+      p.className = "shoot";
+      p.style.cssText = "left:" + s[0] + "%;top:" + s[1] + "%;--d:" + s[2] + "s;--delay:" + s[3] + "s";
+      $("scene").appendChild(p);
+    });
+  }  // undoes the previous backdrop's listener when the look changes
+
   function buildScene() {
+    const SC = SCENES[document.documentElement.getAttribute("data-skin")];
+    if (sceneOff) { sceneOff(); sceneOff = null; }
+    $("scene").innerHTML = "";
+    if (!SC) return;
+    if (SC.city) { buildCity(); return; }
+    if (SC.ocean) { buildOcean(); return; }
     const NS = "http://www.w3.org/2000/svg";
     let seed = 7;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
@@ -750,9 +1371,13 @@
     const glow = el("radialGradient", { id: "orbGlow" }, defs);
     el("stop", { offset: "0", style: "stop-color:var(--orb-glow)" }, glow);
     el("stop", { offset: "1", "stop-color": "#fff", "stop-opacity": "0" }, glow);
-    el("rect", { width: 400, height: 800, fill: "url(#sky)" }, svg);
-    el("circle", { cx: 335, cy: 104, r: 120, fill: "url(#orbGlow)" }, svg);
-    el("circle", { cx: 335, cy: 104, r: 30, style: "fill:var(--orb)", opacity: ".95" }, svg);
+    // painted looks get a sky painted onto a canvas (soft lit clouds, a glowing sun or moon); the others keep the flat gradient
+    const skyImg = SC.paint ? el("image", { x: 0, y: 0, width: 400, height: 800, preserveAspectRatio: "none" }, svg) : null;
+    if (!SC.paint) {
+      el("rect", { width: 400, height: 800, fill: "url(#sky)" }, svg);
+      el("circle", { cx: 335, cy: 104, r: 120, fill: "url(#orbGlow)" }, svg);
+      el("circle", { cx: 335, cy: 104, r: 30, style: "fill:var(--orb)", opacity: ".95" }, svg);
+    }
     // Distant mountains: two hazy ridgelines, then a Fuji-style cone with a lit face, a shaded face,
     // and snow that ends in ragged streaks following the gullies. Seeded, so it never changes between visits.
     const mrnd = (() => { let s = 23; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
@@ -828,6 +1453,7 @@
     }
     paintMountain();
     window.addEventListener("themechange", paintMountain);  // the mountain's colours are painted from the theme, so redo it when the theme changes
+    sceneOff = () => window.removeEventListener("themechange", paintMountain);
     const mist = el("linearGradient", { id: "mist", x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
     el("stop", { offset: "0", style: "stop-color:var(--mist)", "stop-opacity": "0" }, mist);
     el("stop", { offset: ".55", style: "stop-color:var(--mist)", "stop-opacity": ".5" }, mist);
@@ -842,15 +1468,25 @@
 
     // A cherry tree, grown the way one grows: a crooked trunk, wide arching limbs with alternating side branches,
     // fine twigs, and blossoms strung along the twigs rather than packed into balls.
-    const pinks = ["#ffb7d0", "#ff9cc0", "#ffd1e1", "#f78fb3", "#ffc4d8", "#f06f9f"];
-    const fl = el("g", { id: "fl" }, defs);  // one blossom: five notched petals around a darker center
-    for (let k = 0; k < 5; k++) el("path", { d: "M0 0 C-3.4 -2.4 -3.8 -6.9 -1.2 -7.6 L0 -6.4 L1.2 -7.6 C3.8 -6.9 3.4 -2.4 0 0Z", transform: "rotate(" + k * 72 + ")", stroke: "#e07aa0", "stroke-width": ".26", "stroke-opacity": ".55" }, fl);
-    el("circle", { r: ".9", fill: "#b8325f" }, fl);
+    const pinks = SC.pinks;
+    const fl = el("g", { id: "fl" }, defs);  // one blossom: five notched petals around a darker center (or, in autumn, one maple leaf)
+    if (SC.leaf) {
+      el("path", { d: LEAF, stroke: "#9a3a12", "stroke-width": ".3", "stroke-opacity": ".6" }, fl);
+      el("path", { d: "M0 7 L0 10.5", stroke: "#7a3a12", "stroke-width": ".7", "stroke-linecap": "round", fill: "none" }, fl);
+    } else {
+      for (let k = 0; k < 5; k++) el("path", { d: "M0 0 C-3.4 -2.4 -3.8 -6.9 -1.2 -7.6 L0 -6.4 L1.2 -7.6 C3.8 -6.9 3.4 -2.4 0 0Z", transform: "rotate(" + k * 72 + ")", stroke: "#e07aa0", "stroke-width": ".26", "stroke-opacity": ".55" }, fl);
+      el("circle", { r: ".9", fill: "#b8325f" }, fl);
+    }
     const TS = "translate(0 -200)";
-    const haze = el("g", { opacity: ".6", transform: TS }, svg), wood = el("g", { transform: TS }, svg), bloom = el("g", { transform: TS }, svg), nodes = [];
-    const tone = [["#fff6fa", "#ffeaf2", "#ffe0ec"], ["#ffcade", "#ffbcd5", "#ffd6e5"], ["#f7a1c0", "#f294b7", "#ee8aae"]];
+    // In the painted look the tree is not drawn as shapes: its limbs, bark dashes and blossoms are recorded here (same geometry and
+    // same random numbers as before, so it is the same tree) and painted onto a canvas afterwards, with lighting.
+    const rec = { wood: [], dashes: [], flowers: [] };
+    const treeImg = SC.paint ? el("image", { x: 0, y: 0, width: 400, height: 800, preserveAspectRatio: "none" }, svg) : null;
+    const haze = SC.paint ? "haze" : el("g", { opacity: ".6", transform: TS }, svg), wood = SC.paint ? null : el("g", { transform: TS }, svg), bloom = SC.paint ? "bloom" : el("g", { transform: TS }, svg), nodes = [];
+    const tone = SC.tone;
     function flower(g, px, py, s) {
       const sh = (py - 200) / 430 + (rnd() - .5) * .7, set = tone[sh < .45 ? 0 : sh < .78 ? 1 : 2];
+      if (SC.paint) { const rot = Math.floor(rnd() * 360), ci = Math.floor(rnd() * 3); rec.flowers.push({ layer: g, x: px, y: py, s, rot, tier: sh < .45 ? 0 : sh < .78 ? 1 : 2, ci }); return; }
       el("use", { href: "#fl", transform: "translate(" + px.toFixed(1) + " " + py.toFixed(1) + ") rotate(" + Math.floor(rnd() * 360) + ") scale(" + s.toFixed(2) + ")", fill: set[Math.floor(rnd() * 3)] }, g);
     }
     function ribbon(pts, w0, w1, flare) {  // a tapered limb drawn as one outline through its points
@@ -861,11 +1497,14 @@
         const hw = Math.max(.45, (w0 + (w1 - w0) * (i / (n - 1))) / 2 * (1 + (rnd() - .5) * .1)) + (flare && i < 3 ? (3 - i) * 4 : 0);
         L.push([pts[i][0] - dy * hw, pts[i][1] + dx * hw]); R.push([pts[i][0] + dy * hw, pts[i][1] - dx * hw]);
       }
-      el("polygon", { points: L.concat(R.reverse()).map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "), style: "fill:var(--bark)" }, wood);
+      const poly = L.concat(R.reverse());
+      if (SC.paint) { rec.wood.push({ pts: pts.map((p) => [p[0], p[1]]), poly, w0, w1, flare }); return; }
+      el("polygon", { points: poly.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "), style: "fill:var(--bark)" }, wood);
     }
     function lenticels(pts, w) {  // the short pale horizontal dashes on cherry bark
       for (let i = 1; i < pts.length - 1; i++) for (let k = 0; k < 2; k++) {
         const hw = w * (1 - i / pts.length * .4) / 2, x = pts[i][0] + (rnd() - .5) * hw * 1.3, y = pts[i][1] + (rnd() - .5) * 9;
+        if (SC.paint) { rec.dashes.push([x, y]); continue; }
         el("line", { x1: (x - 2.6).toFixed(1), x2: (x + 2.6).toFixed(1), y1: y.toFixed(1), y2: y.toFixed(1), style: "stroke:var(--bark-hi)", "stroke-width": ".9", opacity: ".5", "stroke-linecap": "round" }, wood);
       }
     }
@@ -917,14 +1556,205 @@
       const cnt = nd[2] === 2 ? 3 : (rnd() < .75 ? 1 : 0);
       for (let k = 0; k < cnt; k++) flower(bloom, nd[0] + (rnd() - .5) * 12, nd[1] + (rnd() - .5) * 11, .55 + rnd() * .35);
     });
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < (SC.paint ? 0 : 26); i++) {  // fallen petals on the ground (the painted look paints its own)
       el("ellipse", { cx: (rnd() * 400).toFixed(0), cy: (700 + rnd() * 95).toFixed(0), rx: (4 + rnd() * 4).toFixed(1), ry: (2 + rnd() * 2).toFixed(1),
         fill: pinks[Math.floor(rnd() * 4)], opacity: (.5 + rnd() * .4).toFixed(2), transform: "rotate(" + Math.floor(rnd() * 180) + ")" }, svg);
     }
+    // ---- painted look: the sky and the tree are painted onto canvases (like the mountains and the ocean), lit from the sun's side ----
+    if (SC.paint) {
+      const rootEl = document.documentElement;
+      const hexv = (cs, n) => { const h = cs.getPropertyValue(n).trim().replace("#", ""), v = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+      const rgbaStr = (c, a) => "rgba(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + "," + a + ")";
+      const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+      const sst = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+      const fb2 = (x, y, o) => { let s = 0, a = .5, f = 1, tot = 0; for (let i = 0; i < o; i++) { s += a * n2(x * f + i * 17.3, y * f + i * 9.1); tot += a; a *= .5; f *= 2.03; } return s / tot; };
+      const TAU = Math.PI * 2;
+
+      // the sky: the theme's gradient, a soft glow round the sun or moon, soft clouds lit on the side facing it, and a few out-of-focus lights
+      function paintSky() {
+        const cs = getComputedStyle(rootEl), night = rootEl.getAttribute("data-theme") === "dark";
+        const s1 = hexv(cs, "--sky1"), s2 = hexv(cs, "--sky2"), s3 = hexv(cs, "--sky3"), orb = hexv(cs, "--orb");
+        const gm = cs.getPropertyValue("--orb-glow").match(/[\d.]+/g).map(Number), glowC = [gm[0], gm[1], gm[2]], glowA = gm.length > 3 ? gm[3] : 1;
+        const W = 400, H = 800, OX = 335, OY = 104, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+        const ctx = cv.getContext("2d"), im = ctx.createImageData(W, H), px = im.data;
+        const cLit = mixc(s3, [255, 246, 251], night ? .4 : .72), cShade = mixc(mixc(s2, s1, .5), night ? [70, 40, 110] : [120, 96, 160], .3);
+        for (let y = 0; y < H; y++) {
+          const ty = y / H;
+          let base = ty < .55 ? mixc(s1, s2, ty / .55) : mixc(s2, s3, (ty - .55) / .45);
+          base = mixc(base, night ? [130, 55, 120] : [255, 190, 218], sst(.2, .62, ty) * (night ? .2 : .24));  // a blush of pink low in the sky
+          for (let x = 0; x < W; x++) {
+            const dx = x - OX, dy = y - OY, d2 = dx * dx + dy * dy;
+            let c = mixc(base, glowC, Math.min(1, glowA * (.55 * Math.exp(-d2 / (2 * 80 * 80)) + .5 * Math.exp(-d2 / (2 * 26 * 26)))));
+            if (y < 520) {
+              const cu = x * .0085 + 5.2, cvv = y * .03 + 2.4, d = fb2(cu, cvv, 5), mask = sst(.03, .14, y / 520) * (1 - sst(.7, 1, y / 520)), a = sst(.48, .74, d) * mask * .85;
+              if (a > .004) {
+                const vl = Math.sqrt(d2) || 1, d3 = fb2(cu - dx / vl * .0085 * 7, cvv - dy / vl * .03 * 5, 5), lit = Math.min(1, Math.max(0, (d - d3) * 9 + .5));
+                c = mixc(c, mixc(cShade, cLit, lit), a);
+              }
+            }
+            const cover = Math.min(1, Math.max(0, (30 - Math.sqrt(d2)) / 1.6 + .5));
+            if (cover > 0) c = mixc(c, orb, cover * .96);
+            const i4 = (y * W + x) * 4, dd = (Math.random() - .5) * 1.6;
+            px[i4] = c[0] + dd; px[i4 + 1] = c[1] + dd; px[i4 + 2] = c[2] + dd; px[i4 + 3] = 255;
+          }
+        }
+        ctx.putImageData(im, 0, 0);
+        let bs = 41; const br = () => { bs = (bs * 16807) % 2147483647; return (bs - 1) / 2147483646; };
+        for (let i = 0; i < 18; i++) {
+          const bx = br() * 400, by = br() * 330, r = 5 + br() * 17, g = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+          g.addColorStop(0, "rgba(255,240,248," + ((.12 + br() * .08) * (night ? .5 : 1)).toFixed(3) + ")"); g.addColorStop(1, "rgba(255,240,248,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, r, 0, TAU); ctx.fill();
+        }
+        skyImg.setAttribute("href", cv.toDataURL("image/jpeg", .93));
+      }
+
+      // the tree: soft hazy blossoms behind, limbs shaded light on the upper-left and dark on the lower-right, bark dashes, then blossoms
+      // with a blush, an eye and stamens, sunlight glowing through the canopy, and fallen petals on the ground
+      const PET = new Path2D("M0 0 C-3.4 -2.4 -3.8 -6.9 -1.2 -7.6 L0 -6.4 L1.2 -7.6 C3.8 -6.9 3.4 -2.4 0 0Z");
+      function paintTree() {
+        const night = rootEl.getAttribute("data-theme") === "dark", cs = getComputedStyle(rootEl);
+        const bark = hexv(cs, "--bark"), barkHi = hexv(cs, "--bark-hi"), S = 1.5, cv = document.createElement("canvas"); cv.width = 400 * S; cv.height = 800 * S;
+        const ctx = cv.getContext("2d"); ctx.scale(S, S); ctx.lineCap = "round"; ctx.lineJoin = "round";
+        const toneOf = (hx) => { const v = parseInt(hx.replace("#", ""), 16), c = [(v >> 16) & 255, (v >> 8) & 255, v & 255]; return night ? [c[0] * .72, c[1] * .66, c[2] * .84 + 6] : c; };
+        let ps = 77; const pr = () => { ps = (ps * 16807) % 2147483647; return (ps - 1) / 2147483646; };
+        // the ground: a soft pink wash, and fallen petals with a little shadow each
+        const wash = ctx.createLinearGradient(0, 690, 0, 800); wash.addColorStop(0, "rgba(255,200,222,0)"); wash.addColorStop(1, rgbaStr(night ? [150, 60, 110] : [255, 190, 215], .32));
+        ctx.fillStyle = wash; ctx.fillRect(0, 690, 400, 110);
+        for (let i = 0; i < 90; i++) {
+          const x = pr() * 400, y = 705 + Math.pow(pr(), .8) * 90, rx = 2.2 + pr() * 3.6, ry = rx * (.45 + pr() * .2), rot = pr() * Math.PI, tn = toneOf(SC.pinks[Math.floor(pr() * 4)]);
+          ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+          ctx.fillStyle = "rgba(60,20,40,.14)"; ctx.beginPath(); ctx.ellipse(.5, 1, rx, ry, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = rgbaStr(tn, .88); ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU); ctx.fill(); ctx.restore();
+        }
+        // a soft mound of ground under the tree, a contact shadow at the trunk's foot, and petals gathered round it
+        ctx.save(); ctx.translate(268, 650); ctx.scale(1, .2);
+        const mound = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); mound.addColorStop(0, rgbaStr(night ? [88, 40, 96] : [226, 190, 232], .75)); mound.addColorStop(1, rgbaStr(night ? [88, 40, 96] : [226, 190, 232], 0));
+        ctx.fillStyle = mound; ctx.beginPath(); ctx.arc(0, 0, 200, 0, TAU); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.translate(262, 643); ctx.scale(1, .18);
+        const shadow = ctx.createRadialGradient(0, 0, 0, 0, 0, 40); shadow.addColorStop(0, "rgba(40,10,30,.5)"); shadow.addColorStop(1, "rgba(40,10,30,0)");
+        ctx.fillStyle = shadow; ctx.beginPath(); ctx.arc(0, 0, 40, 0, TAU); ctx.fill(); ctx.restore();
+        for (let i = 0; i < 34; i++) {
+          const x = 268 + (pr() - .5) * 170, y = 640 + Math.pow(pr(), .9) * 36, rx = 2 + pr() * 3, ry = rx * (.45 + pr() * .2), rot = pr() * Math.PI, tn = toneOf(SC.pinks[Math.floor(pr() * 4)]);
+          ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.fillStyle = "rgba(60,20,40,.14)"; ctx.beginPath(); ctx.ellipse(.5, 1, rx, ry, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = rgbaStr(tn, .9); ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU); ctx.fill(); ctx.restore();
+        }
+        ctx.translate(0, -200);
+        rec.flowers.forEach((f) => {  // hazy blossoms behind the wood: soft out-of-focus blooms that fill out the canopy
+          if (f.layer !== "haze") return;
+          const tn = toneOf(SC.tone[f.tier][f.ci]), r = 7 + f.s * 11, g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+          g.addColorStop(0, rgbaStr(tn, .5)); g.addColorStop(1, rgbaStr(tn, 0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, TAU); ctx.fill();
+        });
+        // ---- wood: round limbs shaded across their width (lit on the upper-left), with grain, lenticels, knots, moss and a flared root ----
+        const barkB = mixc(bark, night ? [48, 40, 54] : [96, 82, 80], night ? .3 : .38), shadeC = mixc(barkB, [10, 4, 12], .55);
+        const litC = mixc(barkB, barkHi, .8), litTop = mixc(litC, [255, 230, 235], night ? .08 : .22);
+        const wobble = (x, y) => n2(x * .09 + 3, y * .09 + 7) - .5;  // slow changes in bark tone along a limb
+        function limbGeom(w) {
+          const n = w.pts.length, g = [];
+          for (let i = 0; i < n; i++) {
+            const a = w.pts[Math.max(0, i - 1)], b = w.pts[Math.min(n - 1, i + 1)]; let dx = b[0] - a[0], dy = b[1] - a[1]; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+            let nx = -dy, ny = dx; if (nx * -.6 + ny * -.8 < 0) { nx = -nx; ny = -ny; }  // (nx, ny) points toward the light
+            g.push({ x: w.pts[i][0], y: w.pts[i][1], nx, ny, hw: Math.max(.45, (w.w0 + (w.w1 - w.w0) * (i / (n - 1))) / 2) + (w.flare && i < 3 ? (3 - i) * 4 : 0) });
+          }
+          return g;
+        }
+        rec.wood.forEach((w, wi) => {
+          const g = limbGeom(w), n = g.length, thick = g[0].hw > 3.2;
+          ctx.fillStyle = rgbaStr(shadeC, 1); ctx.beginPath(); w.poly.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill();  // the silhouette, in the dark tone
+          if (g[0].hw < 1.3 && g[n - 1].hw < 1.3) {  // twigs: one stroke with a thin highlight
+            ctx.strokeStyle = rgbaStr(mixc(barkB, shadeC, .3), 1); ctx.lineWidth = Math.max(.5, g[0].hw * 1.7);
+            ctx.beginPath(); g.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+            ctx.strokeStyle = rgbaStr(litC, .35); ctx.lineWidth = .35;
+            ctx.beginPath(); g.forEach((p, i) => i ? ctx.lineTo(p.x + p.nx * p.hw * .4, p.y + p.ny * p.hw * .4) : ctx.moveTo(p.x + p.nx * p.hw * .4, p.y + p.ny * p.hw * .4)); ctx.stroke();
+            return;
+          }
+          const NB = thick ? 9 : 5;
+          for (let b = 0; b < NB; b++) {  // bands from the shaded edge (u = -1) to the lit edge (u = +1) make the limb look round
+            const u = (b + .5) / NB * 2 - 1, lt = Math.pow((u + 1) / 2, 1.15);
+            for (let i = 1; i < n; i++) {
+              const p0 = g[i - 1], p1 = g[i], wb = wobble(p1.x, p1.y) * .35;
+              const base = lt < .55 ? mixc(shadeC, barkB, lt / .55) : mixc(barkB, lt > .85 ? litTop : litC, (lt - .55) / .45);
+              ctx.strokeStyle = rgbaStr([base[0] * (1 + wb), base[1] * (1 + wb), base[2] * (1 + wb)], 1); ctx.lineWidth = Math.max(.4, (p1.hw * 2 / NB) * 1.45);
+              ctx.beginPath(); ctx.moveTo(p0.x + p0.nx * p0.hw * u * .9, p0.y + p0.ny * p0.hw * u * .9); ctx.lineTo(p1.x + p1.nx * p1.hw * u * .9, p1.y + p1.ny * p1.hw * u * .9); ctx.stroke();
+            }
+          }
+          if (thick) for (let k = 0; k < 28; k++) {  // grain: thin lines running along the limb, dark and pale
+            const u = pr() * 1.7 - .85; ctx.strokeStyle = pr() < .6 ? "rgba(20,8,16,.32)" : rgbaStr(litC, .22); ctx.lineWidth = .35 + pr() * .5;
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) { const p = g[i], o = (u + (n2(p.x * .12 + k * 5.3, p.y * .12) - .5) * .5) * p.hw * .9; i ? ctx.lineTo(p.x + p.nx * o, p.y + p.ny * o) : ctx.moveTo(p.x + p.nx * o, p.y + p.ny * o); }
+            ctx.stroke();
+          }
+          if (wi === 0) {  // the trunk: root flare, knots, and moss low on the shaded side
+            const bx = g[0].x, by = g[0].y;
+            // (the trunk's own outline already flares into the ground, which looked more natural than separate root shapes)
+            ctx.fillStyle = "rgba(10,4,12,.22)"; ctx.beginPath(); ctx.ellipse(bx, by - 1, 24, 3.2, 0, 0, TAU); ctx.fill();  // the shadowed join where trunk meets earth
+            [[4, .35], [8, -.4], [11, .5]].forEach((kn) => {
+              const p = g[kn[0]], kx = p.x + p.nx * p.hw * kn[1] * .8, ky = p.y + p.ny * p.hw * kn[1] * .8;
+              ctx.fillStyle = "rgba(20,8,16,.55)"; ctx.beginPath(); ctx.ellipse(kx, ky, 1.6, 3.4, .1, 0, TAU); ctx.fill();
+              ctx.strokeStyle = rgbaStr(litC, .4); ctx.lineWidth = .5; ctx.beginPath(); ctx.ellipse(kx, ky, 2.2, 4.1, .1, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+            });
+            for (let k = 0; k < 7; k++) {
+              const p = g[1 + Math.floor(pr() * 5)], o = -(.3 + pr() * .5), mx0 = p.x + p.nx * p.hw * o, my0 = p.y + p.ny * p.hw * o + (pr() - .5) * 6, mr = 5 + pr() * 6;
+              const mg = ctx.createRadialGradient(mx0, my0, 0, mx0, my0, mr); mg.addColorStop(0, night ? "rgba(80,100,70,.2)" : "rgba(120,140,95,.24)"); mg.addColorStop(1, "rgba(120,140,95,0)");  // a soft green-grey wash, not a shape
+              ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx0, my0, mr, 0, TAU); ctx.fill();
+            }
+          }
+        });
+        rec.dashes.forEach((d) => {  // cherry bark's horizontal lenticels: pale raised dashes with a small shadow under each, irregular in size and strength
+          if (pr() < .38) return;
+          const len = 1.2 + pr() * 2.2, th = .35 + pr() * .35, ox = (pr() - .5) * 3, oy = (pr() - .5) * 4, tilt = (pr() - .5) * .25, al = .28 + pr() * .5;
+          ctx.fillStyle = "rgba(20,8,16," + (al * .5).toFixed(2) + ")"; ctx.beginPath(); ctx.ellipse(d[0] + ox, d[1] + oy + .8, len * 1.05, th * .9, tilt, 0, TAU); ctx.fill();
+          ctx.fillStyle = rgbaStr(mixc(barkHi, [235, 215, 205], .3), al); ctx.beginPath(); ctx.ellipse(d[0] + ox, d[1] + oy, len, th, tilt, 0, TAU); ctx.fill();
+        });
+        // blossoms are wired to their twigs with short stems, and a few unopened buds sit at the tips
+        const bl0 = rec.flowers.filter((f) => f.layer === "bloom");
+        ctx.strokeStyle = rgbaStr(mixc(barkB, shadeC, .3), .95); ctx.lineWidth = .55;
+        bl0.forEach((f) => {
+          let best = null, bd = 1e9; nodes.forEach((nd) => { const dd = (nd[0] - f.x) * (nd[0] - f.x) + (nd[1] - f.y) * (nd[1] - f.y); if (dd < bd) { bd = dd; best = nd; } });
+          if (best && bd < 225) { ctx.beginPath(); ctx.moveTo(best[0], best[1]); ctx.lineTo(f.x, f.y); ctx.stroke(); }
+        });
+        nodes.forEach((nd) => {
+          if (nd[2] !== 2 || pr() > .6) return;
+          const a = pr() * TAU; ctx.save(); ctx.translate(nd[0] + Math.cos(a) * 4, nd[1] + Math.sin(a) * 4); ctx.rotate(a);
+          ctx.fillStyle = rgbaStr(toneOf("#d4527f"), .95); ctx.beginPath(); ctx.ellipse(0, 0, 1.9, 1.05, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = rgbaStr(toneOf("#ff9fc0"), .8); ctx.beginPath(); ctx.ellipse(.7, -.2, .8, .5, 0, 0, TAU); ctx.fill(); ctx.restore();
+        });
+        rec.flowers.forEach((f) => {
+          if (f.layer !== "bloom") return;
+          const tn = toneOf(SC.tone[f.tier][f.ci]);
+          ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot * Math.PI / 180); ctx.scale(f.s, f.s);
+          ctx.fillStyle = rgbaStr(tn, 1); ctx.strokeStyle = night ? "rgba(190,90,140,.5)" : "rgba(224,122,160,.55)"; ctx.lineWidth = .26;
+          for (let k = 0; k < 5; k++) { ctx.save(); ctx.rotate(k * TAU / 5 + (pr() - .5) * .22); const sc = .94 + pr() * .14; ctx.scale(sc, sc); ctx.fill(PET); ctx.stroke(PET); ctx.restore(); }  // no two petals quite alike
+          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 3.4); g.addColorStop(0, "rgba(206,60,110,.75)"); g.addColorStop(1, "rgba(206,60,110,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 3.4, 0, TAU); ctx.fill();
+          // lit side toward the sun (upper left) and shaded side away from it, worked out in this flower's own rotated frame
+          const th = f.rot * Math.PI / 180, hc = Math.cos(th), hs = Math.sin(th), lx = -.6 * hc - .8 * hs, ly = .6 * hs - .8 * hc;
+          ctx.fillStyle = "rgba(160,50,100," + (f.tier === 2 ? .2 : .13) + ")"; ctx.beginPath(); ctx.ellipse(-lx * 2.6, -ly * 2.6, 3, 2.3, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255," + (night ? .1 : .24) + ")"; ctx.beginPath(); ctx.ellipse(lx * 2.4, ly * 2.4, 2.7, 2, 0, 0, TAU); ctx.fill();
+          ctx.strokeStyle = "rgba(190,50,100,.65)"; ctx.lineWidth = .22;
+          for (let k = 0; k < 6; k++) {
+            const a = pr() * TAU, l = 1.5 + pr() * 1.5, ex = Math.cos(a) * l, ey = Math.sin(a) * l;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex, ey); ctx.stroke(); ctx.fillStyle = "#ffd36a"; ctx.beginPath(); ctx.arc(ex, ey, .3, 0, TAU); ctx.fill();
+          }
+          ctx.restore();
+        });
+        // light glowing through the blossoms on the sun's side
+        const bl = rec.flowers.filter((f) => f.layer === "bloom"); let mx = 0, my = 0; bl.forEach((f) => { mx += f.x; my += f.y; }); mx /= bl.length || 1; my /= bl.length || 1;
+        const gg = ctx.createRadialGradient(mx - 40, my - 60, 0, mx - 40, my - 60, 230);
+        gg.addColorStop(0, night ? "rgba(255,150,200,.07)" : "rgba(255,210,230,.16)"); gg.addColorStop(1, "rgba(255,210,230,0)");
+        ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = gg; ctx.fillRect(-50, -50, 500, 900); ctx.globalCompositeOperation = "source-over";
+        treeImg.setAttribute("href", cv.toDataURL("image/png"));
+      }
+      const paintAll = () => { paintSky(); paintTree(); };
+      paintAll();
+      window.addEventListener("themechange", paintAll);  // the sky and blossom colours depend on light/dark, so repaint when it changes
+      const offMountain = sceneOff; sceneOff = () => { offMountain(); window.removeEventListener("themechange", paintAll); };
+    }
     $("scene").appendChild(svg);
-    const petalImg = (c1, c2) => 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='" + c1 + "'/><stop offset='1' stop-color='" + c2 + "'/></linearGradient></defs><path d='M10 23 C2 17 0 8 5 2 C7 1 9 2 10 4 C11 2 13 1 15 2 C20 8 18 17 10 23Z' fill='url(#g)'/></svg>") + '")';
-    const petalSet = [petalImg("#ffe3ee", "#ff9cc0"), petalImg("#fff0f5", "#ffb7d0"), petalImg("#ffc4d8", "#f06f9f")];
-    for (let i = 0; i < 38; i++) {
+    const shape = SC.leaf ? "<path transform='translate(10 11) scale(1.35)' d='" + LEAF + "' fill='url(#g)'/>"
+      : "<path d='M10 23 C2 17 0 8 5 2 C7 1 9 2 10 4 C11 2 13 1 15 2 C20 8 18 17 10 23Z' fill='url(#g)'/>";
+    const petalImg = (c1, c2) => 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='" + c1 + "'/><stop offset='1' stop-color='" + c2 + "'/></linearGradient></defs>" + shape + "</svg>") + '")';
+    const petalSet = SC.fall.map((c) => petalImg(c[0], c[1]));
+    for (let i = 0, n = SC.petals || 20; i < n; i++) {
       const p = document.createElement("i");
       p.className = "petal";
       p.style.cssText = "left:" + (rnd() * 100).toFixed(1) + "%;--s:" + (9 + rnd() * 9).toFixed(1) + "px;--d:" + (9 + rnd() * 8).toFixed(1) + "s;--delay:-" + (rnd() * 17).toFixed(1) + "s;--sway:" + (-60 + rnd() * 120).toFixed(0) + "px;--img:" + petalSet[i % 3];
@@ -935,7 +1765,10 @@
   buildScene();
   load();
   ensureIncome();
+  if (applyRecurring()) save();
   render();
+  // the home-screen app can sit open for days: catch up on bills whenever it comes back to the front
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && applyRecurring()) commit(); });
 })();
 </script>
 </body>
