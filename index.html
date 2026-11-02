@@ -779,7 +779,7 @@
 
     const pj = projection(viewMonth);
     $("kpis").innerHTML =
-      kpi("Projected expenses", whole(pj.expenses), s.budget > 0 ? "of " + whole(s.budget) + " budget" : pj.bills ? pj.bills + " bill" + (pj.bills === 1 ? "" : "s") + " + other expenses" : pj.oneOff ? "Expenses logged so far" : "Add recurring bills", s.budget > 0 && pj.expenses > s.budget ? "bad" : "", "exp") +
+      kpi("Projected expenses", whole(pj.expenses), s.budget > 0 ? (pj.over >= 0.5 ? whole(pj.over) + " over your " + whole(s.budget) + " budget" : pj.topUp >= 0.5 ? "incl. " + whole(pj.topUp) + " unspent budget" : "Within your " + whole(s.budget) + " budget") : pj.bills ? pj.bills + " bill" + (pj.bills === 1 ? "" : "s") + " + other expenses" : pj.oneOff ? "Expenses logged so far" : "Add recurring bills", pj.over >= 0.5 ? "bad" : "", "exp") +
       kpi("Projected savings", (pj.savings < 0 ? "&minus;" : "") + whole(Math.abs(pj.savings)), pj.income > 0 ? "of " + whole(pj.income) + " income" : "Add income or a paycheck", pj.savings < 0 ? "bad" : "", "sav");
 
     renderGoalsRow();
@@ -960,7 +960,7 @@
   }
 
   // How the month looks on paper: the bills due plus the pay days (and other income logged) that fall in it, in full and as of today.
-  // Projected expenses = every recurring bill for the month, paid or not, plus every other expense logged in it. Projected savings = projected income - projected expenses.
+  // Projected expenses = every recurring bill for the month, paid or not, plus every other expense logged in it, plus the unspent part of each category limit (current and future months only). Projected savings = projected income - projected expenses.
   function projection(vm) {
     const k = mKey(vm), now = new Date(), dim = daysIn(vm), cut = k === mKey(now) ? now.getDate() : (vm < now ? dim : 0);  // cut: the last day that counts as "so far"
     const bills = state.recurring.filter((b) => k >= b.since);
@@ -981,9 +981,18 @@
     const oneOffList = monthTx(k).filter((t) => t.type === "expense" && !(t.bill && billIds.has(t.bill)));
     const oneOff = oneOffList.reduce((s, t) => s + t.amount, 0);
     const billsTotal = bills.reduce((s, b) => s + b.amount, 0);
-    const expenses = billsTotal + oneOff;
+    // the part of each category's limit that bills + logged expenses haven't used yet is still expected to be spent (a finished month has nothing left to spend)
+    const topUps = [];
+    if (k >= mKey(now)) state.categories.forEach((c) => {
+      if (!(c.limit > 0)) return;
+      const used = bills.filter((b) => b.category === c.id).reduce((s, b) => s + b.amount, 0) + oneOffList.filter((t) => t.category === c.id).reduce((s, t) => s + t.amount, 0);
+      if (c.limit - used > 0.004) topUps.push({ name: c.name, limit: c.limit, used, amount: c.limit - used });
+    });
+    const topUp = topUps.reduce((s, u) => s + u.amount, 0);
+    const budget = state.categories.reduce((s, c) => s + (c.limit || 0), 0);
+    const expenses = billsTotal + oneOff + topUp;
     const expNow = bills.filter((b) => Math.min(b.day, dim) <= cut).reduce((s, b) => s + b.amount, 0) + oneOff;
-    return { bills: bills.length, billList: bills, billsTotal, oneOff, oneOffList, payList, other, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
+    return { bills: bills.length, billList: bills, billsTotal, oneOff, oneOffList, topUps, topUp, budget, over: Math.max(0, expenses - budget), payList, other, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
   }
 
   // The ? on the Projected expenses / Projected savings tiles: lists every number that goes into the tile.
@@ -996,20 +1005,22 @@
     let title, body;
     if (which === "exp") {
       title = "Projected expenses, " + mon;
-      body = !pj.billList.length && !pj.oneOff ? '<div class="empty">No expenses yet. Add recurring bills on the Budgets page or log an expense.</div>'
+      body = !pj.billList.length && !pj.oneOff && !pj.topUps.length ? '<div class="empty">No expenses yet. Add recurring bills on the Budgets page or log an expense.</div>'
         : "<table><tbody>" +
           (pj.billList.length ? row("Recurring bills", money(pj.billsTotal), true) + pj.billList.slice().sort((a, b) => a.day - b.day).map((b) => row(esc(b.name) + ' <span class="muted" style="font-size:12px">&middot; the ' + ord(b.day) + (b.paid.includes(k) ? " &middot; paid" : "") + "</span>", money(b.amount))).join("") : "") +
           (pj.oneOffList.length ? row("Other expenses", money(pj.oneOff), true) + pj.oneOffList.slice().sort(byDateDesc).map((t) =>
             row(esc(t.note || catName(t)) + ' <span class="muted" style="font-size:12px">&middot; ' + esc(catName(t)) + " &middot; " + new Date(t.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</span>", money(t.amount))).join("") : "") +
+          (pj.topUps.length ? row("Unspent category budgets", money(pj.topUp), true) + pj.topUps.map((u) =>
+            row(esc(u.name) + ' <span class="muted" style="font-size:12px">&middot; ' + money(u.used) + " of " + money(u.limit) + " used</span>", money(u.amount))).join("") : "") +
           row("Total", money(pj.expenses), true) + "</tbody></table>" +
-          note("Every recurring bill for the month, paid or not, plus every other expense you've logged this month. A bill you marked paid is counted once. Spending you haven't logged yet isn't included.");
+          note("Every recurring bill for the month, paid or not, plus every expense you've logged, plus what's left of each category's limit (limit minus the bills and expenses already in that category), since that money is set aside to be spent. A bill you marked paid is counted once. Past months count only what happened.");
     } else {
       title = "Projected savings, " + mon;
       const inc = pj.payList.map((p) => row(esc(p.name) + ' <span class="muted" style="font-size:12px">&middot; ' + p.count + " &times; " + money(p.amount) + "</span>", money(p.amount * p.count))).join("") +
         (pj.other ? row("Other income you logged", money(pj.other)) : "");
       body = "<table><tbody>" + (inc || row('<span class="muted">No income yet</span>', money(0))) + row("Projected income", money(pj.income), true) +
         row("Minus projected expenses", signed(-pj.expenses)) + row("Projected savings", signed(pj.savings), true) + "</tbody></table>" +
-        note("Income is every pay day of your recurring paychecks that falls in the month, plus any income you added by hand. Expenses are the recurring bills plus the other expenses you've logged (tap the ? on Projected expenses to see them).");
+        note("Income is every pay day of your recurring paychecks that falls in the month, plus any income you added by hand. Expenses are the recurring bills, the expenses you've logged and the unspent part of your category limits (tap the ? on Projected expenses to see them).");
     }
     $("infoTitle").textContent = title; $("infoBody").innerHTML = body;
     $("infoDialog").showModal();
@@ -2157,7 +2168,7 @@
   /* ---------- Auto-update ---------- */
   // The server's copy is read fresh (never from the phone's saved copy). If its BUILD stamp differs from this one, reload onto it.
   // Data is saved on every change, so a reload loses nothing. It waits while a form is open, and tries each new build once per session.
-  const BUILD = "2026-11-01.1910";
+  const BUILD = "2026-11-01.1919";
   async function checkUpdate() {
     if (!navigator.onLine || document.hidden) return;
     try {
