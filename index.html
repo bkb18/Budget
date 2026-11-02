@@ -978,11 +978,12 @@
     });
     // every expense logged this month that isn't one of these recurring bills (a paid bill is already in the bill total, so it isn't counted twice)
     const billIds = new Set(bills.map((b) => b.id));
-    const oneOff = sumOf(monthTx(k).filter((t) => !(t.bill && billIds.has(t.bill))), "expense");
+    const oneOffList = monthTx(k).filter((t) => t.type === "expense" && !(t.bill && billIds.has(t.bill)));
+    const oneOff = oneOffList.reduce((s, t) => s + t.amount, 0);
     const billsTotal = bills.reduce((s, b) => s + b.amount, 0);
     const expenses = billsTotal + oneOff;
     const expNow = bills.filter((b) => Math.min(b.day, dim) <= cut).reduce((s, b) => s + b.amount, 0) + oneOff;
-    return { bills: bills.length, billList: bills, billsTotal, oneOff, payList, other, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
+    return { bills: bills.length, billList: bills, billsTotal, oneOff, oneOffList, payList, other, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
   }
 
   // The ? on the Projected expenses / Projected savings tiles: lists every number that goes into the tile.
@@ -996,9 +997,10 @@
     if (which === "exp") {
       title = "Projected expenses, " + mon;
       body = !pj.billList.length && !pj.oneOff ? '<div class="empty">No expenses yet. Add recurring bills on the Budgets page or log an expense.</div>'
-        : "<table><tbody>" + pj.billList.slice().sort((a, b) => a.day - b.day).map((b) => row(esc(b.name) + ' <span class="muted" style="font-size:12px">&middot; the ' + ord(b.day) + (b.paid.includes(k) ? " &middot; paid" : "") + "</span>", money(b.amount))).join("") +
-          (pj.billList.length ? row("Recurring bills", money(pj.billsTotal), true) : "") +
-          row("Other expenses logged", money(pj.oneOff)) +
+        : "<table><tbody>" +
+          (pj.billList.length ? row("Recurring bills", money(pj.billsTotal), true) + pj.billList.slice().sort((a, b) => a.day - b.day).map((b) => row(esc(b.name) + ' <span class="muted" style="font-size:12px">&middot; the ' + ord(b.day) + (b.paid.includes(k) ? " &middot; paid" : "") + "</span>", money(b.amount))).join("") : "") +
+          (pj.oneOffList.length ? row("Other expenses", money(pj.oneOff), true) + pj.oneOffList.slice().sort(byDateDesc).map((t) =>
+            row(esc(t.note || catName(t)) + ' <span class="muted" style="font-size:12px">&middot; ' + esc(catName(t)) + " &middot; " + new Date(t.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</span>", money(t.amount))).join("") : "") +
           row("Total", money(pj.expenses), true) + "</tbody></table>" +
           note("Every recurring bill for the month, paid or not, plus every other expense you've logged this month. A bill you marked paid is counted once. Spending you haven't logged yet isn't included.");
     } else {
@@ -2155,7 +2157,7 @@
   /* ---------- Auto-update ---------- */
   // The server's copy is read fresh (never from the phone's saved copy). If its BUILD stamp differs from this one, reload onto it.
   // Data is saved on every change, so a reload loses nothing. It waits while a form is open, and tries each new build once per session.
-  const BUILD = "2026-11-01.1905";
+  const BUILD = "2026-11-01.1910";
   async function checkUpdate() {
     if (!navigator.onLine || document.hidden) return;
     try {
