@@ -252,7 +252,10 @@
   .hero .two .v { font-size: clamp(14px, 4.4vw, 17px); font-weight: 800; overflow-wrap: anywhere; }
 
   .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
-  .kpi { border-radius: 16px; padding: 12px; }
+  .kpi { border-radius: 16px; padding: 12px; position: relative; }
+  .kpi.has-info .d { padding-right: 24px; }
+  .kpi .info::after { content: ""; position: absolute; inset: -12px; }  /* the circle is small, the tap area is not */
+  .kpi .info { position: absolute; right: 9px; bottom: 9px; width: 20px; height: 20px; min-height: 0; padding: 0; border: 0; border-radius: 50%; font-family: inherit; font-size: 11px; font-weight: 800; line-height: 20px; text-align: center; cursor: pointer; color: var(--ink); background: color-mix(in srgb, var(--ink) 14%, transparent); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 45%, transparent); }
   .kpi .l { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi .v { font-size: clamp(15px, 4.6vw, 19px); font-weight: 800; margin-top: 4px; overflow-wrap: anywhere; }
   .kpi .d { font-size: 11px; margin-top: 2px; color: var(--muted); }
@@ -483,6 +486,7 @@
   <!-- INSIGHTS -->
   <section id="tab-insights" class="hidden">
     <div class="card"><h2>Projection vs. actual</h2><div id="deviance"></div></div>
+    <div class="card"><h2>Daily average</h2><div id="daily"></div></div>
     <div class="card"><h2>This month: spent vs. budget</h2><div id="pace"></div></div>
     <div class="card"><h2>Income vs. spending, last 6 months</h2><div id="bars"></div></div>
     <div class="card"><h2>Category change vs last month</h2><div id="compare"></div></div>
@@ -582,6 +586,11 @@
   </form>
 </dialog>
 
+<dialog id="infoDialog">
+  <h3 id="infoTitle"></h3>
+  <div id="infoBody" style="max-height:60vh;overflow-y:auto"></div>
+  <div class="actions"><button type="button" id="infoClose" style="flex:1">Got it</button></div>
+</dialog>
 <dialog id="billDialog">
   <form id="billForm" method="dialog">
     <h3 id="billTitle">Recurring bill</h3>
@@ -768,23 +777,19 @@
       : s.left < 0 ? "Over by " + money(-s.left) + " this month."
       : "After " + s.txs.length + " transaction" + (s.txs.length === 1 ? "" : "s") + " this month.";
 
-    const prevSpent = sumOf(monthTx(mKey(prevOf(viewMonth))), "expense");
-    const rate = s.income > 0 ? ((s.left + s.saved) / s.income) * 100 : null;  // the share of income not spent, whether or not it went into a goal
-    const avg = s.elapsed > 0 ? s.spent / s.elapsed : 0;
     const pj = projection(viewMonth);
-    const delta = prevSpent > 0 ? ((s.spent - prevSpent) / prevSpent) * 100 : null;
     $("kpis").innerHTML =
-      kpi("Savings", rate === null ? "n/a" : Math.round(rate) + "%", rate === null ? "Add income" : rate >= 20 ? "Healthy" : rate >= 0 ? "Room to grow" : "Overspent", rate !== null && rate < 0 ? "bad" : "") +
-      kpi("Daily avg", whole(avg), delta === null ? "No prior month" : pct(delta) + " vs " + prevOf(viewMonth).toLocaleDateString(undefined, { month: "short" }), delta !== null && delta > 0 ? "bad" : "") +
-      kpi("Projected expenses", whole(pj.expenses), s.budget > 0 ? "of " + whole(s.budget) + " budget" : pj.bills ? pj.bills + " bill" + (pj.bills === 1 ? "" : "s") + " this month" : "Add recurring bills", s.budget > 0 && pj.expenses > s.budget ? "bad" : "") +
-      kpi("Projected savings", (pj.savings < 0 ? "&minus;" : "") + whole(Math.abs(pj.savings)), pj.income > 0 ? "of " + whole(pj.income) + " income" : "Add income or a paycheck", pj.savings < 0 ? "bad" : "");
+      kpi("Projected expenses", whole(pj.expenses), s.budget > 0 ? "of " + whole(s.budget) + " budget" : pj.bills ? pj.bills + " bill" + (pj.bills === 1 ? "" : "s") + " this month" : "Add recurring bills", s.budget > 0 && pj.expenses > s.budget ? "bad" : "", "exp") +
+      kpi("Projected savings", (pj.savings < 0 ? "&minus;" : "") + whole(Math.abs(pj.savings)), pj.income > 0 ? "of " + whole(pj.income) + " income" : "Add income or a paycheck", pj.savings < 0 ? "bad" : "", "sav");
 
     renderGoalsRow();
     renderDonut(s.txs);
     const recent = s.txs.slice().sort(byDateDesc).slice(0, 5);
     $("recent").innerHTML = recent.length ? recent.map(txRow).join("") : '<div class="empty">No transactions this month. Tap + to add one.</div>';
   }
-  const kpi = (l, v, d, cls) => '<div class="kpi"><div class="l">' + l + '</div><div class="v ' + (cls || "") + '">' + v + '</div><div class="d">' + d + "</div></div>";
+  // `info` ("exp" or "sav") adds a small ? button that opens the breakdown of that tile's number (openInfo)
+  const kpi = (l, v, d, cls, info) => '<div class="kpi' + (info ? " has-info" : "") + '"><div class="l">' + l + '</div><div class="v ' + (cls || "") + '">' + v + '</div><div class="d">' + d + "</div>" +
+    (info ? '<button type="button" class="info" data-info="' + info + '" aria-label="How is ' + l.toLowerCase() + ' worked out?">?</button>' : "") + "</div>";
   const byDateDesc = (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
 
   function txRow(t) {
@@ -951,7 +956,7 @@
   }
 
   function renderInsights() {
-    renderDeviance(); renderPace(); renderBars(); renderCompare();
+    renderDeviance(); renderDaily(); renderPace(); renderBars(); renderCompare();
   }
 
   // How the month looks on paper: the bills due plus the pay days (and other income logged) that fall in it, in full and as of today.
@@ -961,16 +966,58 @@
     const bills = state.recurring.filter((b) => k >= b.since);
     const other = sumOf(monthTx(k).filter((t) => !t.paycheck), "income");
     let pay = 0, payNow = 0;
+    const payList = [];  // one entry per paycheck with pay days in this month, for the ? breakdown
     state.paychecks.forEach((p) => {
+      let count = 0;
       for (let n = 0; n < 400; n++) {
         const d = payDate(p, n), dk = mKey(d);
         if (dk > k) break;
-        if (dk === k) { pay += p.amount; if (d.getDate() <= cut) payNow += p.amount; }
+        if (dk === k) { count++; pay += p.amount; if (d.getDate() <= cut) payNow += p.amount; }
       }
+      if (count) payList.push({ name: p.name, amount: p.amount, count });
     });
     const expenses = bills.reduce((s, b) => s + b.amount, 0);
     const expNow = bills.filter((b) => Math.min(b.day, dim) <= cut).reduce((s, b) => s + b.amount, 0);
-    return { bills: bills.length, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
+    return { bills: bills.length, billList: bills, payList, other, expenses, income: other + pay, savings: other + pay - expenses, expNow, savNow: other + payNow - expNow, cut };
+  }
+
+  // The ? on the Projected expenses / Projected savings tiles: lists every number that goes into the tile.
+  function openInfo(which) {
+    const pj = projection(viewMonth), mon = viewMonth.toLocaleDateString(undefined, { month: "long" });
+    const signed = (n) => (n < 0 ? "&minus;" : "") + money(Math.abs(n));
+    const row = (a, b, strong) => "<tr><td" + (strong ? ' style="font-weight:800"' : "") + ">" + a + '</td><td style="' + (strong ? "font-weight:800" : "") + '">' + b + "</td></tr>";
+    const note = (t) => '<p class="muted" style="font-size:12px;margin:10px 0 0">' + t + "</p>";
+    const k = mKey(viewMonth);
+    let title, body;
+    if (which === "exp") {
+      title = "Projected expenses, " + mon;
+      body = !pj.billList.length ? '<div class="empty">No recurring bills yet. Add them on the Budgets page.</div>'
+        : "<table><tbody>" + pj.billList.slice().sort((a, b) => a.day - b.day).map((b) => row(esc(b.name) + ' <span class="muted" style="font-size:12px">&middot; the ' + ord(b.day) + (b.paid.includes(k) ? " &middot; paid" : "") + "</span>", money(b.amount))).join("") +
+          row("Total", money(pj.expenses), true) + "</tbody></table>" +
+          note("Every recurring bill for the month, paid or not. Spending that isn't a recurring bill (groceries, gas and so on) isn't counted here.");
+    } else {
+      title = "Projected savings, " + mon;
+      const inc = pj.payList.map((p) => row(esc(p.name) + ' <span class="muted" style="font-size:12px">&middot; ' + p.count + " &times; " + money(p.amount) + "</span>", money(p.amount * p.count))).join("") +
+        (pj.other ? row("Other income you logged", money(pj.other)) : "");
+      body = "<table><tbody>" + (inc || row('<span class="muted">No income yet</span>', money(0))) + row("Projected income", money(pj.income), true) +
+        row("Minus projected expenses", signed(-pj.expenses)) + row("Projected savings", signed(pj.savings), true) + "</tbody></table>" +
+        note("Income is every pay day of your recurring paychecks that falls in the month, plus any income you added by hand. Expenses are the recurring bills (tap the ? on Projected expenses to see them).");
+    }
+    $("infoTitle").textContent = title; $("infoBody").innerHTML = body;
+    $("infoDialog").showModal();
+  }
+  $("infoClose").onclick = () => $("infoDialog").close();
+  $("kpis").addEventListener("click", (e) => { const b = e.target.closest("[data-info]"); if (b) openInfo(b.dataset.info); });
+
+  // Insights: how much was spent per day so far this month, and how that compares with last month's total.
+  function renderDaily() {
+    const s = stats();
+    const prevSpent = sumOf(monthTx(mKey(prevOf(viewMonth))), "expense");
+    const avg = s.elapsed > 0 ? s.spent / s.elapsed : 0;
+    const delta = prevSpent > 0 ? ((s.spent - prevSpent) / prevSpent) * 100 : null;
+    $("daily").innerHTML = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-size:19px;font-weight:800">' + whole(avg) + ' <span class="muted" style="font-size:12px;font-weight:600">a day</span></span>' +
+      '<span class="' + (delta === null ? "muted" : delta > 0 ? "bad" : "good") + '" style="font-size:13px;font-weight:600">' + (delta === null ? "No prior month" : pct(delta) + " vs " + prevOf(viewMonth).toLocaleDateString(undefined, { month: "short" })) + "</span></div>" +
+      '<p class="note">Spent so far divided by the days passed. The change compares this month\'s spending so far with all of last month.</p>';
   }
 
   // Projected vs actual spending and savings. "Off plan" is the actual figure minus what was planned by today (the whole plan for a finished month).
@@ -2102,7 +2149,7 @@
   /* ---------- Auto-update ---------- */
   // The server's copy is read fresh (never from the phone's saved copy). If its BUILD stamp differs from this one, reload onto it.
   // Data is saved on every change, so a reload loses nothing. It waits while a form is open, and tries each new build once per session.
-  const BUILD = "2026-11-01.1856";
+  const BUILD = "2026-11-01.1902";
   async function checkUpdate() {
     if (!navigator.onLine || document.hidden) return;
     try {
